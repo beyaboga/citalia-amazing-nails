@@ -1,0 +1,29 @@
+<svg viewBox="0 0 236 96" fill="none" xmlns="http://www.w3.org/2000/svg" width="236" height="96">
+  <defs>
+    <linearGradient id="citalia-logo-stroke" x1="8" y1="10" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E08BB4" />
+      <stop offset="0.5" stop-color="#D4669A" />
+      <stop offset="1" stop-color="#8B5A7C" />
+    </linearGradient>
+    <linearGradient id="citalia-logo-dot" x1="14" y1="20" x2="34" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EDB088" />
+      <stop offset="1" stop-color="#E8A87C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Isotipo: calendario abierto en forma de C -->
+  <g transform="translate(6 20) scale(1.15)">
+    <rect x="16.5" y="5" width="4" height="8" rx="2" fill="#E8A87C" />
+    <rect x="27.5" y="5" width="4" height="8" rx="2" fill="#E8A87C" />
+    <path d="M38 11H16A6 6 0 0 0 10 17V35A6 6 0 0 0 16 41H38" stroke="url(#citalia-logo-stroke)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+    <rect x="16" y="22" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+    <rect x="22" y="22" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+    <rect x="28" y="22" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+    <rect x="16" y="29" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+    <rect x="22" y="29" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+    <rect x="28" y="29" width="4.4" height="4.4" rx="1.2" fill="url(#citalia-logo-dot)" />
+  </g>
+
+  <!-- Logotipo: la C la forma el isotipo, aquí sigue "italia" -->
+  <text x="74" y="63" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-size="52" font-weight="600" letter-spacing="1" fill="#2D1B1E">italia</text>
+</svg>

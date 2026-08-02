@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: amazing_nails_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-amazing_nails}
+      POSTGRES_USER: ${POSTGRES_USER:-amazing_nails_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_local_dev}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - amazing_nails_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-amazing_nails_admin} -d ${POSTGRES_DB:-amazing_nails}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  amazing_nails_pgdata:
