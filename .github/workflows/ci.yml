@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Type-check, lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+# Nota: este workflow no corre `npm run build` porque requiere una base de datos
+# Postgres real (con las ~27 migraciones de db/init aplicadas) para las rutas que
+# hacen consultas en tiempo de build. Si se necesita validar el build en CI más
+# adelante, hay que levantar un servicio de Postgres en el job y aplicar
+# db/init/*.sql antes del build.
