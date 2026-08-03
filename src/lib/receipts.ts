@@ -1,14 +1,14 @@
 /**
- * Almacenamiento de comprobantes de gasto en disco, FUERA de `public`: son
- * documentos financieros y solo se sirven por un endpoint autenticado
- * (`/api/expenses/[id]/receipt`), nunca como archivo público.
+ * Almacenamiento de comprobantes de gasto en Supabase Storage (bucket privado
+ * "receipts"): son documentos financieros y solo se sirven por un endpoint
+ * autenticado (`/api/expenses/[id]/receipt`), nunca como archivo público.
+ *
+ * Antes vivían en disco (`uploads/receipts/`) — se movió aquí porque el disco de
+ * un hosting serverless (Netlify/Vercel) no es persistente entre invocaciones.
  */
 import { randomUUID } from 'crypto';
-import { mkdir, writeFile, readFile, unlink } from 'fs/promises';
-import path from 'path';
+import { supabaseAdmin, RECEIPTS_BUCKET } from './supabaseStorage';
 import { RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES } from './finance';
-
-const RECEIPTS_DIR = path.join(process.cwd(), 'uploads', 'receipts');
 
 export interface SavedReceipt {
   filename: string;
@@ -20,10 +20,13 @@ export async function saveReceipt(file: File): Promise<SavedReceipt | { error: s
   if (!ext) return { error: 'El comprobante debe ser una imagen (JPG, PNG, WEBP) o un PDF' };
   if (file.size > RECEIPT_MAX_BYTES) return { error: 'El comprobante no puede superar 5 MB' };
 
-  await mkdir(RECEIPTS_DIR, { recursive: true });
   const filename = `${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(RECEIPTS_DIR, filename), buffer);
+  const { error } = await supabaseAdmin.storage
+    .from(RECEIPTS_BUCKET)
+    .upload(filename, buffer, { contentType: file.type, upsert: false });
+
+  if (error) return { error: 'No se pudo guardar el comprobante. Intente de nuevo.' };
   return { filename };
 }
 
@@ -38,21 +41,15 @@ const CONTENT_TYPES: Record<string, string> = {
 export async function readReceipt(filename: string): Promise<{ body: Buffer; contentType: string } | null> {
   // El nombre lo genera el servidor (uuid.ext); se rechaza cualquier separador de ruta.
   if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) return null;
-  try {
-    const body = await readFile(path.join(RECEIPTS_DIR, filename));
-    const ext = filename.split('.').pop() ?? '';
-    return { body, contentType: CONTENT_TYPES[ext] ?? 'application/octet-stream' };
-  } catch {
-    return null;
-  }
+  const { data, error } = await supabaseAdmin.storage.from(RECEIPTS_BUCKET).download(filename);
+  if (error || !data) return null;
+  const body = Buffer.from(await data.arrayBuffer());
+  const ext = filename.split('.').pop() ?? '';
+  return { body, contentType: CONTENT_TYPES[ext] ?? 'application/octet-stream' };
 }
 
-/** Borra un comprobante del disco (al reemplazarlo o eliminar el gasto). Silencioso. */
+/** Borra un comprobante (al reemplazarlo o eliminar el gasto). Silencioso. */
 export async function deleteReceipt(filename: string | null): Promise<void> {
   if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) return;
-  try {
-    await unlink(path.join(RECEIPTS_DIR, filename));
-  } catch {
-    /* no existía: nada que hacer */
-  }
+  await supabaseAdmin.storage.from(RECEIPTS_BUCKET).remove([filename]);
 }

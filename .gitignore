@@ -43,3 +43,6 @@ turbo/
 
 # Respaldos de base de datos: contienen datos reales de clientes y pagos, nunca a git.
 /db/backups/
+
+# Exportaciones completas (esquema + datos reales) para migrar a otros proveedores.
+/db/exports/

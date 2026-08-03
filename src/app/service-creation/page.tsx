@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import NavigationSidebar from '@/components/common/NavigationSidebar';
 import PageHeader from '@/components/common/PageHeader';
@@ -24,7 +25,9 @@ export default function ServiceCreationPage() {
         />
 
         <div className="p-6 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
-          <ServiceCreationInteractive />
+          <Suspense fallback={<div className="h-96 bg-card rounded-lg border border-border animate-pulse" />}>
+            <ServiceCreationInteractive />
+          </Suspense>
         </div>
       </main>
     </div>
