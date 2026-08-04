@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
-import { getSession, hasPermission, requirePermission } from '@/lib/auth';
+import { getSession, hasPermission } from '@/lib/auth';
 
 const DEFAULT_IMAGE = '/assets/images/no_image.png';
 
@@ -54,9 +54,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // Solo quien gestiona clientes puede crearlos: el técnico queda fuera.
-  const auth = await requirePermission('customers.manage');
-  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  // customers.manage (gestión completa) o customers.create (solo alta, ej. técnico
+  // registrando un cliente nuevo desde la agenda) habilitan crear clientes.
+  const user = await getSession();
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  if (!hasPermission(user, 'customers.manage') && !hasPermission(user, 'customers.create')) {
+    return NextResponse.json({ error: 'No tiene permiso para realizar esta acción' }, { status: 403 });
+  }
 
   const body = await request.json();
   const personalInfo = body?.personalInfo ?? {};

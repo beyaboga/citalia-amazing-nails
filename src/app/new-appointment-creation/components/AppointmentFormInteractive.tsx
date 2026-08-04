@@ -483,7 +483,7 @@ const AppointmentFormInteractive = () => {
           selectedId={customerId}
           onSelect={setCustomerId}
           newCustomerHref={newCustomerHref}
-          canCreateCustomer={can('customers.manage')}
+          canCreateCustomer={can('customers.manage') || can('customers.create')}
         />
 
         <ServicePicker

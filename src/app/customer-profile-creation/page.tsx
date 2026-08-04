@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import NavigationSidebar from '@/components/common/NavigationSidebar';
 import PageHeader from '@/components/common/PageHeader';
 import CustomerProfileCreationInteractive from './components/CustomerProfileCreationInteractive';
+import { getSession, hasPermission } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Crear Perfil de Cliente - Citalia',
@@ -18,6 +19,11 @@ export default async function CustomerProfileCreationPage({ searchParams }: Cust
   const isEditMode = Boolean(id);
   const title = isEditMode ? 'Editar Cliente' : 'Crear Cliente';
 
+  // Quien solo tiene customers.create (ej. técnico creando desde la agenda) no
+  // debe ver un enlace a la pantalla de listado de clientes.
+  const session = await getSession();
+  const canViewCustomersList = Boolean(session && hasPermission(session, 'customers.manage'));
+
   return (
     <div className="min-h-screen bg-background">
       <NavigationSidebar />
@@ -27,7 +33,9 @@ export default async function CustomerProfileCreationPage({ searchParams }: Cust
           title={title}
           breadcrumbItems={[
             { label: 'Inicio', href: '/main-dashboard' },
-            { label: 'Clientes', href: '/customer-profile-management' },
+            ...(canViewCustomersList
+              ? [{ label: 'Clientes', href: '/customer-profile-management' }]
+              : []),
             { label: title, href: '/customer-profile-creation' },
           ]}
         />
