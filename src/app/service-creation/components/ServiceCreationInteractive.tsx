@@ -12,6 +12,7 @@ interface ServiceFormData {
   description: string;
   category: string;
   price: string;
+  cost: string;
   duration: string;
   availability: boolean;
   specialRequirements: string;
@@ -30,10 +31,11 @@ const ServiceCreationInteractive = () => {
     description: '',
     category: '',
     price: '',
+    cost: '',
     duration: '',
     availability: true,
     specialRequirements: '',
-    photo: ''
+    photo: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -80,10 +82,11 @@ const ServiceCreationInteractive = () => {
           description: result.description || '',
           category: String(result.categoryId),
           price: String(result.price),
+          cost: result.cost ? String(result.cost) : '',
           duration: String(result.duration),
           availability: result.isActive,
           specialRequirements: result.specialRequirements || '',
-          photo: result.image || ''
+          photo: result.image || '',
         });
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : 'No se pudo cargar el servicio');
@@ -96,9 +99,9 @@ const ServiceCreationInteractive = () => {
   }, [editId]);
 
   const handleFieldChange = (field: keyof ServiceFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -134,6 +137,13 @@ const ServiceCreationInteractive = () => {
       }
     }
 
+    if (formData.cost) {
+      const cost = parseFloat(formData.cost);
+      if (isNaN(cost) || cost < 0) {
+        newErrors.cost = 'El costo no puede ser negativo';
+      }
+    }
+
     if (!formData.duration) {
       newErrors.duration = 'Debe seleccionar una duración';
     } else {
@@ -160,12 +170,13 @@ const ServiceCreationInteractive = () => {
           description: formData.description,
           categoryId: Number(formData.category),
           price: parseFloat(formData.price),
+          cost: formData.cost ? parseFloat(formData.cost) : 0,
           durationMinutes: parseInt(formData.duration, 10),
           isActive,
           specialRequirements: formData.specialRequirements,
           imageUrl: formData.photo || null,
-          imageAlt: formData.photo ? formData.name : null
-        })
+          imageAlt: formData.photo ? formData.name : null,
+        }),
       });
 
       const result = await response.json();
@@ -179,7 +190,11 @@ const ServiceCreationInteractive = () => {
         router.push('/services-catalog-management');
       }, 2000);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Error al guardar el servicio. Por favor intenta nuevamente.');
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Error al guardar el servicio. Por favor intenta nuevamente.'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -200,7 +215,7 @@ const ServiceCreationInteractive = () => {
   };
 
   const handleCancel = () => {
-    const hasChanges = Object.values(formData).some(value => 
+    const hasChanges = Object.values(formData).some((value) =>
       typeof value === 'string' ? value.trim() !== '' : value !== true
     );
 
@@ -373,7 +388,9 @@ const ServiceCreationInteractive = () => {
         <div className="fixed bottom-6 right-6 z-50 bg-success text-success-foreground px-6 py-4 rounded-lg shadow-warm-lg flex items-center gap-3 animate-slide-up">
           <Icon name="CheckCircleIcon" size={24} />
           <div>
-            <p className="font-medium">{isEditMode ? 'Servicio actualizado exitosamente' : 'Servicio guardado exitosamente'}</p>
+            <p className="font-medium">
+              {isEditMode ? 'Servicio actualizado exitosamente' : 'Servicio guardado exitosamente'}
+            </p>
             <p className="caption text-sm opacity-90">Redirigiendo al catálogo...</p>
           </div>
         </div>

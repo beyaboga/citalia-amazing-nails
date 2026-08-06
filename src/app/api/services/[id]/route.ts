@@ -12,6 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
        description,
        category_id AS "categoryId",
        price::float8 AS price,
+       cost::float8 AS cost,
        duration_minutes AS duration,
        is_active AS "isActive",
        special_requirements AS "specialRequirements",
@@ -42,7 +43,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.name !== undefined) {
     const name = String(body.name).trim();
     if (name.length < 3) {
-      return NextResponse.json({ error: 'El nombre del servicio es obligatorio (mínimo 3 caracteres)' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'El nombre del servicio es obligatorio (mínimo 3 caracteres)' },
+        { status: 400 }
+      );
     }
     fields.push(`name = $${paramIndex++}`);
     values.push(name);
@@ -51,7 +55,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.description !== undefined) {
     const description = String(body.description).trim();
     if (description.length < 10) {
-      return NextResponse.json({ error: 'La descripción es obligatoria (mínimo 10 caracteres)' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'La descripción es obligatoria (mínimo 10 caracteres)' },
+        { status: 400 }
+      );
     }
     fields.push(`description = $${paramIndex++}`);
     values.push(description);
@@ -71,10 +78,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     values.push(price);
   }
 
+  if (body.cost !== undefined) {
+    const cost = body.cost === null || body.cost === '' ? 0 : Number(body.cost);
+    if (!Number.isFinite(cost) || cost < 0) {
+      return NextResponse.json({ error: 'El costo no puede ser negativo' }, { status: 400 });
+    }
+    fields.push(`cost = $${paramIndex++}`);
+    values.push(cost);
+  }
+
   if (body.durationMinutes !== undefined) {
     const duration = Number(body.durationMinutes);
     if (!(duration > 0) || duration > 720) {
-      return NextResponse.json({ error: 'La duración debe estar entre 1 minuto y 12 horas' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'La duración debe estar entre 1 minuto y 12 horas' },
+        { status: 400 }
+      );
     }
     fields.push(`duration_minutes = $${paramIndex++}`);
     values.push(duration);
@@ -142,7 +161,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   } catch (error: any) {
     if (error?.code === '23503') {
       return NextResponse.json(
-        { error: 'No se puede eliminar: el servicio está en uso en citas o preferencias de clientes' },
+        {
+          error:
+            'No se puede eliminar: el servicio está en uso en citas o preferencias de clientes',
+        },
         { status: 409 }
       );
     }

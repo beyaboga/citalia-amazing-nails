@@ -11,6 +11,7 @@ interface ServiceFormData {
   description: string;
   category: string;
   price: string;
+  cost: string;
   duration: string;
   availability: boolean;
   specialRequirements: string;
@@ -32,7 +33,14 @@ interface ServiceFormFieldsProps {
   onAddCategory: () => void;
 }
 
-const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoadingCategories, onAddCategory }: ServiceFormFieldsProps) => {
+const ServiceFormFields = ({
+  formData,
+  errors,
+  onFieldChange,
+  categories,
+  isLoadingCategories,
+  onAddCategory,
+}: ServiceFormFieldsProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +93,11 @@ const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoad
           <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border">
             {formData.photo ? (
               <>
-                <AppImage src={formData.photo} alt="Foto del servicio" className="w-full h-full object-contain" />
+                <AppImage
+                  src={formData.photo}
+                  alt="Foto del servicio"
+                  className="w-full h-full object-contain"
+                />
                 <button
                   type="button"
                   onClick={handleRemovePhoto}
@@ -145,7 +157,10 @@ const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoad
       </div>
 
       <div>
-        <label htmlFor="serviceDescription" className="block text-sm font-medium text-foreground mb-2">
+        <label
+          htmlFor="serviceDescription"
+          className="block text-sm font-medium text-foreground mb-2"
+        >
           Descripción <span className="text-error">*</span>
         </label>
         <textarea
@@ -186,7 +201,7 @@ const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoad
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label htmlFor="servicePrice" className="block text-sm font-medium text-foreground mb-2">
             Precio (HNL) <span className="text-error">*</span>
@@ -218,7 +233,43 @@ const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoad
         </div>
 
         <div>
-          <label htmlFor="serviceDuration" className="block text-sm font-medium text-foreground mb-2">
+          <label htmlFor="serviceCost" className="block text-sm font-medium text-foreground mb-2">
+            Costo (HNL)
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+              L
+            </span>
+            <input
+              type="text"
+              id="serviceCost"
+              value={formData.cost}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d.]/g, '');
+                onFieldChange('cost', value);
+              }}
+              className={`w-full pl-10 pr-4 h-12 rounded-lg border ${
+                errors.cost ? 'border-error' : 'border-border'
+              } bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-smooth`}
+              placeholder="0.00"
+            />
+          </div>
+          <p className="caption text-muted-foreground text-xs mt-1">
+            Costo real en materiales/insumos — alimenta el Fondo de Costos de Servicios.
+          </p>
+          {errors.cost && (
+            <p className="mt-1 text-sm text-error flex items-center gap-1">
+              <Icon name="ExclamationCircleIcon" size={16} />
+              {errors.cost}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="serviceDuration"
+            className="block text-sm font-medium text-foreground mb-2"
+          >
             Duración <span className="text-error">*</span>
           </label>
           <div className="relative">
@@ -253,7 +304,10 @@ const ServiceFormFields = ({ formData, errors, onFieldChange, categories, isLoad
       </div>
 
       <div>
-        <label htmlFor="specialRequirements" className="block text-sm font-medium text-foreground mb-2">
+        <label
+          htmlFor="specialRequirements"
+          className="block text-sm font-medium text-foreground mb-2"
+        >
           Requisitos Especiales
         </label>
         <textarea
