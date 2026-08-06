@@ -29,6 +29,7 @@ interface PeriodSummary {
   closedByName: string | null;
   received: number;
   reserved: number;
+  expenses: number;
   available: number;
 }
 
@@ -36,6 +37,7 @@ interface PeriodDetail {
   period: { id: number; year: number; month: number; status: string };
   received: number;
   reserved: number;
+  expenses: number;
   available: number;
   breakdown: { id: number; name: string; kind: string; balance: number }[];
 }
@@ -135,6 +137,9 @@ const PeriodsTab = ({ canManage, onChanged }: PeriodsTabProps) => {
                   Fondos
                 </th>
                 <th className="px-4 py-3 text-right caption font-semibold text-muted-foreground uppercase tracking-wider">
+                  Gastos
+                </th>
+                <th className="px-4 py-3 text-right caption font-semibold text-muted-foreground uppercase tracking-wider">
                   Disponible
                 </th>
                 <th className="px-4 py-3 text-right caption font-semibold text-muted-foreground uppercase tracking-wider">
@@ -168,6 +173,9 @@ const PeriodsTab = ({ canManage, onChanged }: PeriodsTabProps) => {
                   </td>
                   <td className="px-4 py-3 text-right text-foreground tabular-nums">
                     {formatLempiras(p.reserved)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-foreground tabular-nums">
+                    {formatLempiras(p.expenses)}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-foreground tabular-nums">
                     {formatLempiras(p.available)}
@@ -220,7 +228,7 @@ const PeriodsTab = ({ canManage, onChanged }: PeriodsTabProps) => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div className="bg-muted/30 rounded-lg p-3">
                     <p className="caption text-muted-foreground text-xs">Ventas</p>
                     <p className="font-heading font-semibold text-foreground">
@@ -231,6 +239,12 @@ const PeriodsTab = ({ canManage, onChanged }: PeriodsTabProps) => {
                     <p className="caption text-muted-foreground text-xs">Fondos</p>
                     <p className="font-heading font-semibold text-foreground">
                       {formatLempiras(detail.reserved)}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="caption text-muted-foreground text-xs">Gastos</p>
+                    <p className="font-heading font-semibold text-foreground">
+                      {formatLempiras(detail.expenses)}
                     </p>
                   </div>
                   <div className="bg-muted/30 rounded-lg p-3">

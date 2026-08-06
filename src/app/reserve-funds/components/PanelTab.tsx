@@ -24,6 +24,7 @@ interface DashboardData {
   period: { id: number; year: number; month: number };
   received: number;
   reserved: number;
+  expenses: number;
   available: number;
   breakdown: { id: number; name: string; kind: string; displayOrder: number; balance: number }[];
 }
@@ -142,7 +143,7 @@ const PanelTab = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-card rounded-lg p-6 shadow-warm border border-border">
           <div className="flex items-center gap-2 mb-2">
             <Icon name="BanknotesIcon" size={18} className="text-success" />
@@ -161,6 +162,15 @@ const PanelTab = () => {
             {formatLempiras(data.reserved)}
           </p>
         </div>
+        <div className="bg-card rounded-lg p-6 shadow-warm border border-error/30 ring-1 ring-error/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Icon name="ArrowTrendingDownIcon" size={18} className="text-error" />
+            <p className="caption text-muted-foreground">Gastos del mes</p>
+          </div>
+          <p className="text-3xl font-heading font-semibold text-foreground">
+            {formatLempiras(data.expenses)}
+          </p>
+        </div>
         <div className="bg-card rounded-lg p-6 shadow-warm border border-primary/30 ring-1 ring-primary/10">
           <div className="flex items-center gap-2 mb-2">
             <Icon name="WalletIcon" size={18} className="text-primary" />
@@ -173,6 +183,10 @@ const PanelTab = () => {
           </p>
         </div>
       </div>
+      <p className="caption text-muted-foreground text-xs">
+        Disponible real = Recibido − Fondos reservados − Gastos del mes (gastos pagados del módulo
+        de Gastos).
+      </p>
 
       <div className="bg-card rounded-lg border border-border shadow-warm overflow-hidden">
         <div className="p-6 border-b border-border">

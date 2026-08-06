@@ -4,9 +4,12 @@ import { requirePermission } from '@/lib/auth';
 
 /**
  * Panel principal de Fondos Reservados: recibido, fondos reservados (con desglose
- * por fondo) y disponible real, para el período ABIERTO actual — acumulado desde
- * que abrió el mes, no solo "hoy", para que el propietario sepa en todo momento
- * cuánto tiene comprometido. Disponible = Recibido − Fondos reservados.
+ * por fondo), gastos del mes y disponible real, para el período ABIERTO actual —
+ * acumulado desde que abrió el mes, no solo "hoy", para que el propietario sepa
+ * en todo momento cuánto tiene comprometido.
+ * Disponible = Recibido − Fondos reservados − Gastos del período.
+ * Los gastos son los del módulo de Gastos (`expenses`, status='PAID'), mismo
+ * criterio que usa `cash_movements` — ver [[expenses_module]].
  */
 export async function GET() {
   const auth = await requirePermission('funds.view');
@@ -26,7 +29,7 @@ export async function GET() {
     period = rows[0];
   }
 
-  const [receivedResult, fundsResult] = await Promise.all([
+  const [receivedResult, fundsResult, expensesResult] = await Promise.all([
     // "Recibido" = dinero que efectivamente entró a caja por pagos de citas en el período
     // (mismo criterio que cash_movements, direction='IN'), incluye propina.
     pool.query(
@@ -51,6 +54,16 @@ export async function GET() {
         ORDER BY rf.display_order, rf.id`,
       [period.id]
     ),
+    // Gastos pagados del mismo período (módulo de Gastos), mismo criterio que
+    // cash_movements: solo status='PAID' baja el saldo real.
+    pool.query(
+      `SELECT COALESCE(SUM(amount), 0)::float8 AS expenses
+         FROM expenses
+        WHERE status = 'PAID'
+          AND EXTRACT(YEAR FROM expense_date)::int = $1
+          AND EXTRACT(MONTH FROM expense_date)::int = $2`,
+      [period.year, period.month]
+    ),
   ]);
 
   const received = receivedResult.rows[0].received as number;
@@ -61,13 +74,15 @@ export async function GET() {
     displayOrder: number;
     balance: number;
   }[];
+  const expenses = expensesResult.rows[0].expenses as number;
   const reserved = Math.round(funds.reduce((sum, f) => sum + f.balance, 0) * 100) / 100;
-  const available = Math.round((received - reserved) * 100) / 100;
+  const available = Math.round((received - reserved - expenses) * 100) / 100;
 
   return NextResponse.json({
     period: { id: period.id, year: period.year, month: period.month },
     received,
     reserved,
+    expenses,
     available,
     breakdown: funds,
   });

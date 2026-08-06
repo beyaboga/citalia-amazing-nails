@@ -4,7 +4,8 @@ import { requirePermission } from '@/lib/auth';
 
 /** Resumen de cierre de un período (abierto o cerrado) — calculado en vivo sobre
  * los movimientos, que ya son inmutables una vez cerrado el período. No hace falta
- * una tabla de snapshot aparte. */
+ * una tabla de snapshot aparte.
+ * Disponible = Recibido − Fondos reservados − Gastos pagados del período. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('funds.view');
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -22,7 +23,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
   const period = periodRows[0];
 
-  const [receivedResult, fundsResult] = await Promise.all([
+  const [receivedResult, fundsResult, expensesResult] = await Promise.all([
     pool.query(
       `SELECT COALESCE(SUM(pd.amount), 0)::float8 AS received
          FROM payment_details pd JOIN payments p ON p.id = pd.payment_id
@@ -40,17 +41,27 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         ORDER BY rf.display_order, rf.id`,
       [period.id]
     ),
+    pool.query(
+      `SELECT COALESCE(SUM(amount), 0)::float8 AS expenses
+         FROM expenses
+        WHERE status = 'PAID'
+          AND EXTRACT(YEAR FROM expense_date)::int = $1
+          AND EXTRACT(MONTH FROM expense_date)::int = $2`,
+      [period.year, period.month]
+    ),
   ]);
 
   const received = receivedResult.rows[0].received as number;
   const funds = fundsResult.rows as { id: number; name: string; kind: string; balance: number }[];
+  const expenses = expensesResult.rows[0].expenses as number;
   const reserved = Math.round(funds.reduce((sum, f) => sum + f.balance, 0) * 100) / 100;
 
   return NextResponse.json({
     period,
     received,
     reserved,
-    available: Math.round((received - reserved) * 100) / 100,
+    expenses,
+    available: Math.round((received - reserved - expenses) * 100) / 100,
     breakdown: funds,
   });
 }

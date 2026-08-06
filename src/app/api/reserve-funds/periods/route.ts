@@ -3,7 +3,8 @@ import { pool } from '@/lib/db';
 import { requirePermission } from '@/lib/auth';
 
 /** Lista de períodos financieros (meses), más recientes primero, con totales
- * agregados para la vista de historial de cierres. */
+ * agregados para la vista de historial de cierres.
+ * Disponible = Recibido − Fondos reservados − Gastos pagados del período. */
 export async function GET() {
   const auth = await requirePermission('funds.view');
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -26,7 +27,14 @@ export async function GET() {
          SELECT SUM(CASE WHEN fm.direction = 'IN' THEN fm.amount ELSE -fm.amount END)
            FROM fund_movements fm
           WHERE fm.financial_period_id = fp.id AND fm.voided_at IS NULL
-       ), 0)::float8 AS reserved
+       ), 0)::float8 AS reserved,
+       COALESCE((
+         SELECT SUM(e.amount)
+           FROM expenses e
+          WHERE e.status = 'PAID'
+            AND EXTRACT(YEAR FROM e.expense_date)::int = fp.year
+            AND EXTRACT(MONTH FROM e.expense_date)::int = fp.month
+       ), 0)::float8 AS expenses
      FROM financial_periods fp
      LEFT JOIN users u ON u.id = fp.closed_by
      ORDER BY fp.year DESC, fp.month DESC`
@@ -34,7 +42,7 @@ export async function GET() {
 
   const result = rows.map((r) => ({
     ...r,
-    available: Math.round((r.received - r.reserved) * 100) / 100,
+    available: Math.round((r.received - r.reserved - r.expenses) * 100) / 100,
   }));
 
   return NextResponse.json(result);
