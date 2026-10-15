@@ -65,8 +65,13 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
     try {
       await onSubmit(email, password, rememberMe);
     } catch (error) {
+      // Mostrar el motivo real que manda el servidor (credenciales, cuenta
+      // desactivada, error de conexión...) en vez de un mensaje fijo que
+      // ocultaba fallas que no tienen que ver con la contraseña.
       setErrors({
-        general: 'Credenciales inválidas. Por favor verifique su correo y contraseña.'
+        general: error instanceof Error && error.message
+          ? error.message
+          : 'No se pudo iniciar sesión. Intente de nuevo.'
       });
     } finally {
       setIsLoading(false);

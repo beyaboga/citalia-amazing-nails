@@ -18,7 +18,12 @@ const LoginInteractive = () => {
       body: JSON.stringify({ email, password }),
     });
 
-    const result = await response.json();
+    // Si el servidor falla antes de llegar a la ruta (p. ej. un 502 de Netlify),
+    // la respuesta es HTML y no JSON: no dejar que eso tape el error real.
+    const result = await response.json().catch(() => null);
+    if (!response.ok && !result) {
+      throw new Error(`Error del servidor (${response.status}). Intente de nuevo en unos minutos.`);
+    }
 
     if (!response.ok) {
       throw new Error(result?.error || 'No se pudo iniciar sesión');
