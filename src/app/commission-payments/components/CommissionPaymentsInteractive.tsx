@@ -22,6 +22,8 @@ interface EmployeeOption {
   name: string;
 }
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
   approved: 'Aprobada',
@@ -41,6 +43,9 @@ const CommissionPaymentsInteractive = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  // Fecha en la que realmente se pagó: por defecto hoy, pero editable para
+  // cuando el registro se hace un día (o más) después del pago real.
+  const [payDate, setPayDate] = useState(today());
 
   const [employeeId, setEmployeeId] = useState('');
   const [from, setFrom] = useState('');
@@ -133,7 +138,7 @@ const CommissionPaymentsInteractive = () => {
       const res = await fetch('/api/commission-payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entryIds: selectedEntries.map((e) => e.id) }),
+        body: JSON.stringify({ entryIds: selectedEntries.map((e) => e.id), paidAt: payDate }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'No se pudo pagar');
@@ -318,14 +323,25 @@ const CommissionPaymentsInteractive = () => {
                 Total del listado: {formatLempiras(total)}
               </p>
             </div>
-            <button
-              onClick={handlePay}
-              disabled={!canPayNow || isPaying}
-              className="h-12 px-6 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isPaying ? <Icon name="ArrowPathIcon" size={20} className="animate-spin" /> : <Icon name="BanknotesIcon" size={20} />}
-              Pagar comisiones
-            </button>
+            <div className="flex items-center gap-3">
+              <div>
+                <label className="caption text-muted-foreground block mb-1 text-xs">Fecha de pago</label>
+                <input
+                  type="date"
+                  value={payDate}
+                  onChange={(e) => setPayDate(e.target.value)}
+                  className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <button
+                onClick={handlePay}
+                disabled={!canPayNow || isPaying}
+                className="h-12 px-6 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isPaying ? <Icon name="ArrowPathIcon" size={20} className="animate-spin" /> : <Icon name="BanknotesIcon" size={20} />}
+                Pagar comisiones
+              </button>
+            </div>
           </div>
         )}
       </div>

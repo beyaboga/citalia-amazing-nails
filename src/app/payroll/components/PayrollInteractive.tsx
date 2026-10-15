@@ -61,6 +61,9 @@ const PayrollInteractive = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [payMethod, setPayMethod] = useState('');
+  // Fecha en la que realmente se pagó: por defecto hoy, editable para cuando
+  // el registro se hace un día (o más) después del pago real.
+  const [payDate, setPayDate] = useState(today());
   const [paying, setPaying] = useState(false);
 
   // Período de nómina: mes completo o rango personalizado.
@@ -157,6 +160,7 @@ const PayrollInteractive = () => {
           periodStart: preview.periodStart,
           periodEnd: preview.periodEnd,
           paymentMethodId: Number(payMethod),
+          paidAt: payDate,
           includeCommissions,
           periodMode,
           ...(periodMode === 'MONTH' && selYear && selMonth ? { periodMonth: selMonth, periodYear: selYear } : {}),
@@ -421,6 +425,8 @@ const PayrollInteractive = () => {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)}
+                className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
               <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}
                 className="flex-1 h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
                 <option value="">Método de pago…</option>

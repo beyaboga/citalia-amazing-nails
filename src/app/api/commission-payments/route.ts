@@ -81,6 +81,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Seleccione al menos una comisión para pagar' }, { status: 400 });
   }
 
+  // Fecha en la que realmente se pagó (permite registrar el pago un día después,
+  // en vez de forzar la fecha del momento en que se hace clic). Si no viene, se
+  // usa el momento actual, como antes.
+  const paidAtInput = body?.paidAt !== undefined && body?.paidAt !== null ? String(body.paidAt) : '';
+  if (paidAtInput && !/^\d{4}-\d{2}-\d{2}$/.test(paidAtInput)) {
+    return NextResponse.json({ error: 'La fecha de pago no es válida' }, { status: 400 });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -116,9 +124,9 @@ export async function POST(request: Request) {
 
     const { rows: payoutRows } = await client.query(
       `INSERT INTO commission_payouts (team_member_id, period_start, period_end, total_amount, status, paid_at, created_by)
-       VALUES ($1, $2, $3, $4, 'paid', now(), $5)
+       VALUES ($1, $2, $3, $4, 'paid', COALESCE($6::timestamptz, now()), $5)
        RETURNING id`,
-      [teamMemberId, dates[0], dates[dates.length - 1], total, auth.user.id]
+      [teamMemberId, dates[0], dates[dates.length - 1], total, auth.user.id, paidAtInput || null]
     );
     const payoutId = payoutRows[0].id;
 

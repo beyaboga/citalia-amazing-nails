@@ -25,9 +25,17 @@ export async function POST(request: Request) {
   const periodMonth = periodMode === 'MONTH' && Number.isInteger(Number(body?.periodMonth)) ? Number(body.periodMonth) : null;
   const periodYear = periodMode === 'MONTH' && Number.isInteger(Number(body?.periodYear)) ? Number(body.periodYear) : null;
 
+  // Fecha en la que realmente se pagó la planilla (permite registrarla un día
+  // después sin que quede fechada al momento del clic). Si no viene, se usa
+  // el momento actual, como antes.
+  const paidAtInput = body?.paidAt !== undefined && body?.paidAt !== null ? String(body.paidAt) : '';
+
   if (!Number.isInteger(employeeId)) return NextResponse.json({ error: 'Empleado no válido' }, { status: 400 });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
     return NextResponse.json({ error: 'Período no válido' }, { status: 400 });
+  }
+  if (paidAtInput && !/^\d{4}-\d{2}-\d{2}$/.test(paidAtInput)) {
+    return NextResponse.json({ error: 'La fecha de pago no es válida' }, { status: 400 });
   }
   if (!Number.isInteger(paymentMethodId)) return NextResponse.json({ error: 'Seleccione un método de pago' }, { status: 400 });
 
@@ -67,8 +75,8 @@ export async function POST(request: Request) {
       if (commissionIds.length > 0) {
         const { rows: po } = await client.query(
           `INSERT INTO commission_payouts (team_member_id, period_start, period_end, total_amount, status, paid_at, created_by)
-           VALUES ($1, $2, $3, $4, 'paid', now(), $5) RETURNING id`,
-          [employeeId, from, to, preview.commissions.total, auth.user.id]
+           VALUES ($1, $2, $3, $4, 'paid', COALESCE($6::timestamptz, now()), $5) RETURNING id`,
+          [employeeId, from, to, preview.commissions.total, auth.user.id, paidAtInput || null]
         );
         commissionPayoutId = po[0].id;
         await client.query(
@@ -83,12 +91,12 @@ export async function POST(request: Request) {
       `INSERT INTO payroll_payments
          (team_member_id, period_start, period_end, salary_amount, commission_amount,
           advance_deduction, net_amount, payment_method_id, commission_payout_id, notes, created_by,
-          include_commissions, is_custom_range, period_month, period_year)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          include_commissions, is_custom_range, period_month, period_year, paid_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,COALESCE($16::timestamptz, now()))
        RETURNING id`,
       [employeeId, from, to, preview.salary, effectiveCommission,
        preview.advances.total, preview.net, paymentMethodId, commissionPayoutId, notes || null, auth.user.id,
-       includeCommissions, periodMode === 'CUSTOM', periodMonth, periodYear]
+       includeCommissions, periodMode === 'CUSTOM', periodMonth, periodYear, paidAtInput || null]
     );
     const payrollId = pp[0].id;
 
