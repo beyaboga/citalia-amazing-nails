@@ -22,7 +22,11 @@ interface EmployeeOption {
   name: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Fecha local (no UTC): toISOString() daría "mañana" después de las 6 p.m. en Honduras.
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
