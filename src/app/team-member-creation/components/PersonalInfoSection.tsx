@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { toLocalDateString } from '@/lib/localDate';
 
 interface PersonalInfoData {
   name: string;
@@ -48,7 +49,7 @@ const PersonalInfoSection = ({ data, onChange, isEditMode = false }: PersonalInf
     }
   };
 
-  const isExpired = Boolean(data.terminationDate) && data.terminationDate < new Date().toISOString().slice(0, 10);
+  const isExpired = Boolean(data.terminationDate) && data.terminationDate < toLocalDateString();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

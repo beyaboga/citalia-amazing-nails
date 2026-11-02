@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { toLocalDateString } from '@/lib/localDate';
 
 interface RescheduleModalProps {
   isOpen: boolean;
@@ -121,7 +122,7 @@ const RescheduleModal = ({
               id="new-date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+              min={toLocalDateString()}
               className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-smooth"
             />
           </div>

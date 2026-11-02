@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { RECEIPT_ACCEPT, type Expense, type ExpenseStatus } from '@/lib/finance';
+import { toLocalDateString } from '@/lib/localDate';
 
 interface Option {
   id: number;
@@ -17,7 +18,7 @@ interface ExpenseFormModalProps {
   onSaved: () => void;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => toLocalDateString();
 
 const ExpenseFormModal = ({ categories, methods, editing, onClose, onSaved }: ExpenseFormModalProps) => {
   const [supplierName, setSupplierName] = useState(editing?.supplierName ?? '');

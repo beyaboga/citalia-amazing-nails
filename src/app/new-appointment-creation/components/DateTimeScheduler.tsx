@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { toLocalDateString } from '@/lib/localDate';
 
 interface DateTimeSchedulerProps {
   onDateTimeChange: (date: string, time: string) => void;
@@ -48,13 +49,13 @@ const DateTimeScheduler = ({ onDateTimeChange, selectedDate = '', selectedTime =
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return toLocalDateString(tomorrow);
   };
 
   const getMaxDate = () => {
     const maxDate = new Date();
     maxDate.setMonth(maxDate.getMonth() + 3);
-    return maxDate.toISOString().split('T')[0];
+    return toLocalDateString(maxDate);
   };
 
   const isSlotAvailable = (slot: string): boolean => {
