@@ -44,6 +44,17 @@ export async function GET(request: Request) {
     add('st.status = $?', status);
   }
 
+  // Esta pantalla es para contactar a quien NO tiene cita: quien ya agendó (hoy o más
+  // adelante) no debe aparecer, para no escribirle por error.
+  conditions.push(
+    `NOT EXISTS (
+       SELECT 1 FROM appointments fa
+        WHERE fa.customer_id = st.customer_id
+          AND fa.appointment_date >= CURRENT_DATE
+          AND fa.status::text IN ('pending', 'confirmed', 'in_progress')
+     )`
+  );
+
   if (categoryId) add('st.service_category_id = $?', Number(categoryId));
   if (search) add('c.name ILIKE $?', `%${search}%`);
   if (from) add('st.last_visit_date >= $?', from);

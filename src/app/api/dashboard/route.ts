@@ -164,7 +164,13 @@ export async function GET(request: Request) {
           WHERE status = 'OVERDUE'
             AND (CURRENT_DATE - estimated_next_visit) >= (average_days_between_visits * (SELECT lost_multiplier FROM customer_followup_settings WHERE id = 1))
         )::int AS lost
-      FROM customer_category_statistics
+      FROM customer_category_statistics st
+      WHERE NOT EXISTS (
+        SELECT 1 FROM appointments fa
+         WHERE fa.customer_id = st.customer_id
+           AND fa.appointment_date >= CURRENT_DATE
+           AND fa.status::text IN ('pending', 'confirmed', 'in_progress')
+      )
     `),
     pool.query(`
       SELECT
