@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { rows } = await pool.query(
     `SELECT
        fm.id,
-       to_char(fm.created_at, 'YYYY-MM-DD HH24:MI') AS date,
+       to_char(fm.created_at AT TIME ZONE 'America/Tegucigalpa', 'YYYY-MM-DD HH24:MI') AS date,
        fm.movement_type AS "movementType",
        fm.direction,
        fm.amount::float8 AS amount,

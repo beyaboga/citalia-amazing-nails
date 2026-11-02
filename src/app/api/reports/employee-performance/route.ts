@@ -49,8 +49,8 @@ export async function GET(request: Request) {
      tip_stats AS (
        SELECT employee_id, COALESCE(SUM(amount), 0) AS tips
          FROM tip_distribution
-        WHERE ($1::date IS NULL OR distribution_date::date >= $1::date)
-          AND ($2::date IS NULL OR distribution_date::date <= $2::date)
+        WHERE ($1::date IS NULL OR (distribution_date AT TIME ZONE 'America/Tegucigalpa')::date >= $1::date)
+          AND ($2::date IS NULL OR (distribution_date AT TIME ZONE 'America/Tegucigalpa')::date <= $2::date)
         GROUP BY employee_id
      )
      SELECT tm.id AS "teamMemberId", u.name,

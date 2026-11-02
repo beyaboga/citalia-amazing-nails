@@ -34,7 +34,7 @@ export async function GET(request: Request) {
             to_char(e.expense_date, 'YYYY-MM-DD') AS "expenseDate",
             e.payment_method_id AS "paymentMethodId", pm.name AS "paymentMethodName",
             e.status, (e.receipt_file IS NOT NULL) AS "hasReceipt", e.notes,
-            u.name AS "createdByName", to_char(e.created_at, 'YYYY-MM-DD HH24:MI') AS "createdAt"
+            u.name AS "createdByName", to_char(e.created_at AT TIME ZONE 'America/Tegucigalpa', 'YYYY-MM-DD HH24:MI') AS "createdAt"
        FROM expenses e
        JOIN expense_categories ec ON ec.id = e.expense_category_id
        JOIN payment_methods pm ON pm.id = e.payment_method_id

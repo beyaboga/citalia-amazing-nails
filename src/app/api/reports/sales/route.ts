@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     categoryId ? Number(categoryId) : null, methodId ? Number(methodId) : null];
 
   const { rows } = await pool.query(
-    `SELECT p.id AS "paymentId", to_char(p.created_at, 'YYYY-MM-DD') AS date,
+    `SELECT p.id AS "paymentId", to_char(p.created_at AT TIME ZONE 'America/Tegucigalpa', 'YYYY-MM-DD') AS date,
             a.id AS "appointmentId", c.name AS "customerName", u.name AS "employeeName",
             (SELECT STRING_AGG(s2.name, ', ' ORDER BY s2.name)
                FROM appointment_services aps2 JOIN services s2 ON s2.id = aps2.service_id
@@ -43,8 +43,8 @@ export async function GET(request: Request) {
        JOIN customers c ON c.id = p.customer_id
        LEFT JOIN users u ON u.id = a.technician_id
       WHERE p.voided_at IS NULL
-        AND ($1::date IS NULL OR p.created_at::date >= $1::date)
-        AND ($2::date IS NULL OR p.created_at::date <= $2::date)
+        AND ($1::date IS NULL OR (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date >= $1::date)
+        AND ($2::date IS NULL OR (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date <= $2::date)
         AND ($3::int IS NULL OR a.technician_id = $3)
         AND ($4::text IS NULL OR a.status::text = $4)
         AND ($5::int IS NULL OR EXISTS (

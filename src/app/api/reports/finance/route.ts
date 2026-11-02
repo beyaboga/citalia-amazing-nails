@@ -27,8 +27,8 @@ export async function GET(request: Request) {
       `SELECT COALESCE(SUM(subtotal - discount_amount), 0)::float8 AS ingresos
          FROM payments
         WHERE voided_at IS NULL
-          AND ($1::date IS NULL OR created_at::date >= $1)
-          AND ($2::date IS NULL OR created_at::date <= $2)`,
+          AND ($1::date IS NULL OR (created_at AT TIME ZONE 'America/Tegucigalpa')::date >= $1)
+          AND ($2::date IS NULL OR (created_at AT TIME ZONE 'America/Tegucigalpa')::date <= $2)`,
       [from, to]
     ),
     pool.query(
@@ -59,12 +59,12 @@ export async function GET(request: Request) {
     pool.query(
       `SELECT
          COALESCE((SELECT SUM(salary_amount) FROM payroll_payments
-                    WHERE ($1::date IS NULL OR paid_at::date >= $1)
-                      AND ($2::date IS NULL OR paid_at::date <= $2)), 0)::float8 AS salary,
+                    WHERE ($1::date IS NULL OR (paid_at AT TIME ZONE 'America/Tegucigalpa')::date >= $1)
+                      AND ($2::date IS NULL OR (paid_at AT TIME ZONE 'America/Tegucigalpa')::date <= $2)), 0)::float8 AS salary,
          COALESCE((SELECT SUM(total_amount) FROM commission_payouts
                     WHERE status = 'paid'
-                      AND ($1::date IS NULL OR paid_at::date >= $1)
-                      AND ($2::date IS NULL OR paid_at::date <= $2)), 0)::float8 AS commissions`,
+                      AND ($1::date IS NULL OR (paid_at AT TIME ZONE 'America/Tegucigalpa')::date >= $1)
+                      AND ($2::date IS NULL OR (paid_at AT TIME ZONE 'America/Tegucigalpa')::date <= $2)), 0)::float8 AS commissions`,
       [from, to]
     ),
   ]);

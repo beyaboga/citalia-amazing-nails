@@ -17,7 +17,7 @@ export async function GET() {
     `SELECT
        r.id,
        r.receipt_number AS "receiptNumber",
-       to_char(r.issued_date, 'DD/MM/YYYY HH24:MI') AS "issuedDate",
+       to_char(r.issued_date AT TIME ZONE 'America/Tegucigalpa', 'DD/MM/YYYY HH24:MI') AS "issuedDate",
        to_char(a.appointment_date, 'YYYY-MM-DD') AS "serviceDate",
        c.name AS "customerName",
        p.total_amount::float8 AS "totalAmount",

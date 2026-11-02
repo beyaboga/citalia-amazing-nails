@@ -62,19 +62,19 @@ export async function GET(request: Request) {
         (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN $1 AND $2 AND status = 'cancelled')::int AS cancellations,
         (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN $3 AND $4 AND status = 'cancelled')::int AS prev_cancellations,
         (SELECT COALESCE(SUM(subtotal - discount_amount), 0) FROM payments
-             WHERE voided_at IS NULL AND created_at::date BETWEEN $1 AND $2)::float8 AS income,
+             WHERE voided_at IS NULL AND (created_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $1 AND $2)::float8 AS income,
         (SELECT COALESCE(SUM(subtotal - discount_amount), 0) FROM payments
-             WHERE voided_at IS NULL AND created_at::date BETWEEN $3 AND $4)::float8 AS prev_income,
+             WHERE voided_at IS NULL AND (created_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $3 AND $4)::float8 AS prev_income,
         (SELECT COALESCE(SUM(amount), 0) FROM expenses
              WHERE status = 'PAID' AND expense_date BETWEEN $1 AND $2)::float8 AS expense,
         (SELECT COALESCE(SUM(amount), 0) FROM expenses
              WHERE status = 'PAID' AND expense_date BETWEEN $3 AND $4)::float8 AS prev_expense,
-        (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE paid_at::date BETWEEN $1 AND $2)::float8 AS salary,
-        (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE paid_at::date BETWEEN $3 AND $4)::float8 AS prev_salary,
+        (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $1 AND $2)::float8 AS salary,
+        (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $3 AND $4)::float8 AS prev_salary,
         (SELECT COALESCE(SUM(total_amount), 0) FROM commission_payouts
-             WHERE status = 'paid' AND paid_at::date BETWEEN $1 AND $2)::float8 AS commissions,
+             WHERE status = 'paid' AND (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $1 AND $2)::float8 AS commissions,
         (SELECT COALESCE(SUM(total_amount), 0) FROM commission_payouts
-             WHERE status = 'paid' AND paid_at::date BETWEEN $3 AND $4)::float8 AS prev_commissions
+             WHERE status = 'paid' AND (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $3 AND $4)::float8 AS prev_commissions
       `,
       [from, to, prevFrom, prevTo]
     ),
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
       `SELECT ${DOW_LABEL} AS day,
               COALESCE(SUM(p.subtotal - p.discount_amount) FILTER (WHERE p.voided_at IS NULL), 0)::float8 AS revenue
          FROM generate_series($1::date, $2::date, interval '1 day') d(day)
-         LEFT JOIN payments p ON p.created_at::date = d.day::date
+         LEFT JOIN payments p ON (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date = d.day::date
         GROUP BY d.day ORDER BY d.day`,
       [from, to]
     ),
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
          FROM payments p
          JOIN appointments a ON a.id = p.appointment_id
          JOIN users u ON u.id = a.technician_id
-        WHERE p.voided_at IS NULL AND p.created_at::date BETWEEN $1 AND $2
+        WHERE p.voided_at IS NULL AND (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN $1 AND $2
         GROUP BY u.name ORDER BY revenue DESC LIMIT 5`,
       [from, to]
     ),

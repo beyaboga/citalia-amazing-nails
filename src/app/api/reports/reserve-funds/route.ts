@@ -42,11 +42,11 @@ export async function GET(request: Request) {
   }
   if (from) {
     values.push(from);
-    conditions.push(`fm.created_at::date >= $${values.length}`);
+    conditions.push(`(fm.created_at AT TIME ZONE 'America/Tegucigalpa')::date >= $${values.length}`);
   }
   if (to) {
     values.push(to);
-    conditions.push(`fm.created_at::date <= $${values.length}`);
+    conditions.push(`(fm.created_at AT TIME ZONE 'America/Tegucigalpa')::date <= $${values.length}`);
   }
   if (serviceId) {
     values.push(Number(serviceId));
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   const { rows } = await pool.query(
     `SELECT
        fm.id,
-       to_char(fm.created_at, 'YYYY-MM-DD') AS date,
+       to_char(fm.created_at AT TIME ZONE 'America/Tegucigalpa', 'YYYY-MM-DD') AS date,
        rf.name AS "fundName",
        fm.movement_type AS "movementType",
        fm.direction,

@@ -19,8 +19,8 @@ export async function GET(request: Request) {
        JOIN payments p ON p.id = pd.payment_id
        JOIN appointments a ON a.id = p.appointment_id
       WHERE p.voided_at IS NULL
-        AND ($1::date IS NULL OR p.created_at::date >= $1::date)
-        AND ($2::date IS NULL OR p.created_at::date <= $2::date)
+        AND ($1::date IS NULL OR (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date >= $1::date)
+        AND ($2::date IS NULL OR (p.created_at AT TIME ZONE 'America/Tegucigalpa')::date <= $2::date)
         AND ($3::int IS NULL OR a.technician_id = $3)
       GROUP BY pm.id, pm.name
       ORDER BY "totalReceived" DESC`,
