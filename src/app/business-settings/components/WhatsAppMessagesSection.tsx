@@ -16,6 +16,10 @@ const EVENT_HINTS: Record<WhatsAppEvent, string> = {
   created: 'Se genera al guardar una cita nueva.',
   rescheduled: 'Se genera cuando una cita cambia de fecha u hora.',
   cancelled: 'Se genera cuando una cita se marca como cancelada.',
+  technician:
+    'Al guardar una cita nueva, si la agenda otra persona, se ofrece este aviso para la estilista asignada.',
+  reminder:
+    'Se genera desde la pantalla Recordatorios de Citas, para avisarle a la clienta un día antes.',
   followup_manos:
     'Botón de WhatsApp en Seguimiento de Clientes, para las clientas que les toca volver por Manos.',
   followup_pies:

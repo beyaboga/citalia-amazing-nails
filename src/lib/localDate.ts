@@ -12,6 +12,14 @@ export function formatDateDMY(iso: string): string {
   return y && m && d ? `${d}/${m}/${y}` : iso;
 }
 
+/** 'YYYY-MM-DD' → 'Lunes', 'Martes'… (se arma con y/m/d locales para no mover el día por zona horaria). */
+export function weekdayName(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const name = new Date(y, m - 1, d).toLocaleDateString('es-HN', { weekday: 'long' });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 /** 'HH:MM' (24 h) → 'hh:MM AM/PM'. */
 export function formatTime12(hhmm: string): string {
   const [h, m] = hhmm.split(':').map(Number);

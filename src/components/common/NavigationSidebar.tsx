@@ -89,9 +89,21 @@ const NavigationSidebar = ({ isCollapsed = false }: NavigationSidebarProps) => {
         { label: 'Agenda', href: '/appointments-calendar', icon: 'CalendarDaysIcon' },
         { label: 'Citas', href: '/appointments-management', icon: 'CalendarIcon' },
         {
+          label: 'Recordatorios de Citas',
+          href: '/appointment-reminders',
+          icon: 'BellAlertIcon',
+          permission: 'customers.manage',
+        },
+        {
           label: 'Reporte de Citas',
           href: '/appointments-report',
           icon: 'DocumentChartBarIcon',
+          permission: 'reports.view',
+        },
+        {
+          label: 'Reporte de Inasistencias',
+          href: '/no-shows-report',
+          icon: 'ExclamationTriangleIcon',
           permission: 'reports.view',
         },
       ],

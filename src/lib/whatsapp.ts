@@ -16,7 +16,9 @@ export type WhatsAppEvent =
   | 'cancelled'
   | 'followup'
   | 'followup_manos'
-  | 'followup_pies';
+  | 'followup_pies'
+  | 'reminder'
+  | 'technician';
 
 /** Mensaje de seguimiento según la categoría; las que no tienen uno propio usan 'followup'. */
 export function followupEventForCategory(categoryName: string): WhatsAppEvent {
@@ -36,6 +38,8 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
   created: 'Cita confirmada',
   rescheduled: 'Cita reprogramada',
   cancelled: 'Cita cancelada',
+  reminder: 'Recordatorio de cita',
+  technician: 'Aviso a la estilista',
   followup_manos: 'Seguimiento: Manos',
   followup_pies: 'Seguimiento: Pies',
   followup: 'Seguimiento: otras categorías',
@@ -62,7 +66,18 @@ export const WHATSAPP_FOLLOWUP_VARIABLES = [
   { key: 'categoria', description: 'Categoría de servicio que le toca', example: 'Uñas' },
 ] as const;
 
+/** El aviso a la estilista es corto: quién, cuándo y qué; y quién agendó la cita. */
+export const WHATSAPP_TECHNICIAN_VARIABLES = [
+  { key: 'profesional', description: 'Nombre de la estilista', example: 'Fernanda' },
+  { key: 'cliente', description: 'Nombre de la clienta', example: 'Bessy Bonilla' },
+  { key: 'fecha', description: 'Fecha de la cita', example: 'sáb, 25 jul' },
+  { key: 'hora', description: 'Hora de inicio', example: '11:00 AM' },
+  { key: 'servicios', description: 'Servicios, solo los nombres', example: 'Manicure gel, Pedicure' },
+  { key: 'agendada_por', description: 'Quién agendó la cita', example: 'Luisa' },
+] as const;
+
 export function variablesForEvent(event: WhatsAppEvent) {
+  if (event === 'technician') return WHATSAPP_TECHNICIAN_VARIABLES;
   return event.startsWith('followup') ? WHATSAPP_FOLLOWUP_VARIABLES : WHATSAPP_VARIABLES;
 }
 

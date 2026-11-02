@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import ReasonSelect from '@/components/common/ReasonSelect';
+import TechnicianNoticeModal from '@/components/common/TechnicianNoticeModal';
+import { prepareTechnicianNotice, type TechnicianNotice } from '@/lib/technicianNotice';
 import { useSession } from '@/lib/useSession';
 import {
   PRICE_AND_CODE_ERROR,
@@ -93,7 +95,7 @@ const AppointmentModal = ({
   onSaved,
 }: AppointmentModalProps) => {
   const router = useRouter();
-  const { can } = useSession();
+  const { can, session } = useSession();
   const canCharge = can('payments.charge');
   const existingCode = (draft.discounts ?? []).find((d) => d.discountType === 'CODE') ?? null;
   const isEditMode = Boolean(draft.id);
@@ -106,6 +108,8 @@ const AppointmentModal = ({
   const [priceReason, setPriceReason] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  // Aviso a la estilista cuando la cita nueva la agenda otra persona.
+  const [technicianNotice, setTechnicianNotice] = useState<TechnicianNotice | null>(null);
 
   // Historial de cambios de precio y descuentos (auditoría), bajo demanda.
   const [history, setHistory] = useState<{
@@ -250,6 +254,25 @@ const AppointmentModal = ({
         return;
       }
 
+      // En alta, si la agenda otra persona, se ofrece avisarle a la estilista antes de
+      // cerrar. Ya está guardada: un problema aquí nunca impide agendar.
+      if (!isEditMode && session && selectedCustomer && form.technicianId) {
+        const notice = await prepareTechnicianNotice({
+          technicianId: form.technicianId,
+          creator: { id: session.id, name: session.name },
+          customerName: selectedCustomer.name,
+          date: form.date,
+          timeLabel: formatTimeLabel(form.startTime),
+          serviceNames: form.serviceIds.map(
+            (id) => services.find((s) => Number(s.id) === id)?.name ?? ''
+          ).filter(Boolean),
+        });
+        if (notice) {
+          setTechnicianNotice(notice);
+          return;
+        }
+      }
+
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar la cita');
@@ -259,6 +282,7 @@ const AppointmentModal = ({
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
@@ -801,6 +825,9 @@ const AppointmentModal = ({
         </div>
       </div>
     </div>
+
+    {technicianNotice && <TechnicianNoticeModal notice={technicianNotice} onDone={onSaved} />}
+    </>
   );
 };
 

@@ -17,6 +17,8 @@ import {
   type WhatsAppTemplate,
 } from '@/lib/whatsapp';
 import CopyButton from '@/components/common/CopyButton';
+import TechnicianNoticeModal from '@/components/common/TechnicianNoticeModal';
+import { prepareTechnicianNotice, type TechnicianNotice } from '@/lib/technicianNotice';
 import ClientPicker, { type CustomerOption } from './ClientPicker';
 import ServicePicker, { type ServiceOption } from './ServicePicker';
 import {
@@ -108,6 +110,11 @@ const AppointmentFormInteractive = () => {
   const [confirmation, setConfirmation] = useState<{ message: string; url: string | null } | null>(
     null
   );
+
+  // Aviso a la estilista cuando la cita la agenda otra persona. Se prepara al guardar y
+  // se muestra después de la confirmación a la clienta (o directo si esa no aplica).
+  const pendingTechnicianNotice = useRef<TechnicianNotice | null>(null);
+  const [technicianNotice, setTechnicianNotice] = useState<TechnicianNotice | null>(null);
 
   // Prefill desde la URL: clic en el calendario, "agendar" desde un cliente, o
   // el regreso tras registrar un cliente nuevo (que reanexa customerId y conserva
@@ -410,8 +417,23 @@ const AppointmentFormInteractive = () => {
         return;
       }
 
-      // La cita ya quedó guardada. El mensaje se ofrece después, para que un
+      // La cita ya quedó guardada. Los mensajes se ofrecen después, para que un
       // problema con WhatsApp nunca impida agendar.
+      const customer = customers.find((c) => c.id === customerId);
+      pendingTechnicianNotice.current =
+        session && customer
+          ? await prepareTechnicianNotice({
+              technicianId,
+              creator: { id: session.id, name: session.name },
+              customerName: customer.name,
+              date,
+              timeLabel: formatTimeLabel(startTime),
+              serviceNames: selectedServices.map(
+                (service) => `${service.name}${qtyOf(service) > 1 ? ` (x${qtyOf(service)})` : ''}`
+              ),
+            })
+          : null;
+
       const draft = buildConfirmationMessage();
       if (draft) {
         setConfirmation(draft);
@@ -419,12 +441,28 @@ const AppointmentFormInteractive = () => {
         return;
       }
 
-      goToCalendar();
+      finish();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar la cita');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Cierra lo que haya a la vista y sigue con lo que falta: primero la clienta, luego
+  // la estilista, y al final el calendario.
+  const finish = () => {
+    // Un tick de espera: si se llega desde el enlace de WhatsApp, el navegador debe abrir
+    // el chat antes de que este modal se desmonte.
+    setTimeout(() => {
+      setConfirmation(null);
+      if (pendingTechnicianNotice.current) {
+        setTechnicianNotice(pendingTechnicianNotice.current);
+        pendingTechnicianNotice.current = null;
+        return;
+      }
+      goToCalendar();
+    }, 0);
   };
 
   const goToCalendar = () => {
@@ -1004,7 +1042,7 @@ const AppointmentFormInteractive = () => {
                 href={confirmation.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={goToCalendar}
+                onClick={finish}
                 className="flex-1 h-11 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-smooth flex items-center justify-center gap-2"
               >
                 <Icon name="ChatBubbleLeftRightIcon" size={18} />
@@ -1014,7 +1052,7 @@ const AppointmentFormInteractive = () => {
             <CopyButton text={confirmation.message} label="Copiar mensaje" />
             <button
               type="button"
-              onClick={goToCalendar}
+              onClick={finish}
               className="flex-1 h-11 px-4 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-smooth"
             >
               Ahora no
@@ -1022,6 +1060,10 @@ const AppointmentFormInteractive = () => {
           </div>
         </div>
       </div>
+    )}
+
+    {technicianNotice && (
+      <TechnicianNoticeModal notice={technicianNotice} onDone={goToCalendar} />
     )}
     </>
   );

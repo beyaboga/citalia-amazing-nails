@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { useSession } from '@/lib/useSession';
+import { formatDateDMY, weekdayName } from '@/lib/localDate';
 import { rangeForPreset, type DateRangePreset } from '@/lib/reportFilters';
 import { exportCsv, exportXlsx } from '@/lib/exportTable';
 import DateRangePresetFilter from '@/components/common/DateRangePresetFilter';
@@ -102,8 +103,10 @@ const AppointmentsReportInteractive = () => {
   useEffect(() => { if (canView) load(); }, [canView, load]);
 
   const columns: ReportTableColumn<AppointmentRow>[] = [
-    { key: 'date', label: 'Fecha', sortable: true },
-    { key: 'time', label: 'Hora', sortable: true },
+    // La clave 'date' sigue siendo YYYY-MM-DD, así que ordenar por fecha ordena bien.
+    { key: 'date', label: 'Fecha', sortable: true, nowrap: true, render: (r) => formatDateDMY(r.date) },
+    { key: 'weekday', label: 'Día', nowrap: true, sortable: true, sortValue: (r) => r.date, render: (r) => weekdayName(r.date) },
+    { key: 'time', label: 'Hora', sortable: true, nowrap: true },
     { key: 'customerName', label: 'Cliente', sortable: true },
     { key: 'serviceName', label: 'Servicio', sortable: true },
     { key: 'durationMinutes', label: 'Duración', align: 'right', sortable: true, render: (r) => `${r.durationMinutes} min` },
@@ -115,9 +118,9 @@ const AppointmentsReportInteractive = () => {
   ];
 
   const buildExportData = () => ({
-    headers: ['Fecha', 'Hora', 'Cliente', 'Servicio', 'Duración (min)', 'Empleado', 'Estado'],
+    headers: ['Fecha', 'Día', 'Hora', 'Cliente', 'Servicio', 'Duración (min)', 'Empleado', 'Estado'],
     rows: rows.map((r) => [
-      r.date, r.time, r.customerName, r.serviceName, r.durationMinutes,
+      formatDateDMY(r.date), weekdayName(r.date), r.time, r.customerName, r.serviceName, r.durationMinutes,
       r.employeeName ?? '—', STATUS_CONFIG[r.status]?.label ?? r.status,
     ]),
   });
