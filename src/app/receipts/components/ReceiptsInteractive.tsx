@@ -8,6 +8,7 @@ import type { ReceiptSettings } from '@/lib/payments';
 
 interface ReceiptRow {
   id: number;
+  kind: 'single' | 'group';
   receiptNumber: string;
   issuedDate: string;
   serviceDate: string;
@@ -31,7 +32,10 @@ const ReceiptsInteractive = () => {
   const [error, setError] = useState('');
 
   // Detalle abierto (recibo a reimprimir/anular)
-  const [detail, setDetail] = useState<(ReceiptData & { id: number; paymentId: number }) | null>(null);
+  // Un cobro combinado trae `groupId` (se anula completo); uno individual, `paymentId`.
+  const [detail, setDetail] = useState<
+    (ReceiptData & { id?: number; paymentId?: number; groupId?: number }) | null
+  >(null);
   const [voiding, setVoiding] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [showVoid, setShowVoid] = useState(false);
@@ -52,10 +56,11 @@ const ReceiptsInteractive = () => {
 
   useEffect(load, []);
 
-  const openDetail = async (id: number) => {
+  const openDetail = async (row: ReceiptRow) => {
     setError('');
     try {
-      const res = await fetch(`/api/receipts/${id}`);
+      const url = row.kind === 'group' ? `/api/receipts/group/${row.id}` : `/api/receipts/${row.id}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error();
       setDetail(await res.json());
       setShowVoid(false);
@@ -71,7 +76,10 @@ const ReceiptsInteractive = () => {
     setVoiding(true);
     setError('');
     try {
-      const res = await fetch(`/api/payments/${detail.paymentId}/void`, {
+      const voidUrl = detail.groupId
+        ? `/api/payments/combined/${detail.groupId}/void`
+        : `/api/payments/${detail.paymentId}/void`;
+      const res = await fetch(voidUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: voidReason }),
@@ -121,7 +129,7 @@ const ReceiptsInteractive = () => {
               </thead>
               <tbody>
                 {receipts.map((r) => (
-                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/20">
+                  <tr key={`${r.kind}-${r.id}`} className="border-b border-border last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-3 font-mono font-medium text-foreground">{r.receiptNumber}</td>
                     <td className="px-4 py-3 text-foreground">{r.customerName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.issuedDate}</td>
@@ -144,7 +152,7 @@ const ReceiptsInteractive = () => {
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
-                        onClick={() => openDetail(r.id)}
+                        onClick={() => openDetail(r)}
                         className="text-sm font-medium text-primary hover:underline"
                       >
                         Ver
