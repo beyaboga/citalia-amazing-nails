@@ -10,7 +10,21 @@
  * `buildWhatsAppUrl` por una llamada al proveedor: el resto no cambia.
  */
 
-export type WhatsAppEvent = 'created' | 'rescheduled' | 'cancelled';
+export type WhatsAppEvent =
+  | 'created'
+  | 'rescheduled'
+  | 'cancelled'
+  | 'followup'
+  | 'followup_manos'
+  | 'followup_pies';
+
+/** Mensaje de seguimiento según la categoría; las que no tienen uno propio usan 'followup'. */
+export function followupEventForCategory(categoryName: string): WhatsAppEvent {
+  const name = categoryName.trim().toLowerCase();
+  if (name === 'manos') return 'followup_manos';
+  if (name === 'pies') return 'followup_pies';
+  return 'followup';
+}
 
 export interface WhatsAppTemplate {
   event: WhatsAppEvent;
@@ -22,6 +36,9 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
   created: 'Cita confirmada',
   rescheduled: 'Cita reprogramada',
   cancelled: 'Cita cancelada',
+  followup_manos: 'Seguimiento: Manos',
+  followup_pies: 'Seguimiento: Pies',
+  followup: 'Seguimiento: otras categorías',
 };
 
 /** Variables disponibles en las plantillas, con un ejemplo para la vista previa. */
@@ -38,6 +55,16 @@ export const WHATSAPP_VARIABLES = [
   { key: 'profesional', description: 'Quien atiende la cita', example: 'Luisa Fernanda' },
   { key: 'total', description: 'Total a pagar', example: 'L 650' },
 ] as const;
+
+/** El recordatorio de seguimiento no tiene cita: solo conoce a la clienta y la categoría. */
+export const WHATSAPP_FOLLOWUP_VARIABLES = [
+  { key: 'cliente', description: 'Nombre de la clienta', example: 'Bessy' },
+  { key: 'categoria', description: 'Categoría de servicio que le toca', example: 'Uñas' },
+] as const;
+
+export function variablesForEvent(event: WhatsAppEvent) {
+  return event.startsWith('followup') ? WHATSAPP_FOLLOWUP_VARIABLES : WHATSAPP_VARIABLES;
+}
 
 export type WhatsAppVariables = Record<string, string>;
 
@@ -82,8 +109,8 @@ export function renderTemplate(body: string, variables: WhatsAppVariables): stri
 }
 
 /** Ejemplo de cada variable, para la vista previa del mantenimiento. */
-export function sampleVariables(): WhatsAppVariables {
-  return Object.fromEntries(WHATSAPP_VARIABLES.map((v) => [v.key, v.example]));
+export function sampleVariables(event: WhatsAppEvent = 'created'): WhatsAppVariables {
+  return Object.fromEntries(variablesForEvent(event).map((v) => [v.key, v.example]));
 }
 
 /**

@@ -3,7 +3,7 @@ import { pool } from '@/lib/db';
 import { getSession, hasPermission } from '@/lib/auth';
 import type { WhatsAppEvent } from '@/lib/whatsapp';
 
-const EVENTS: WhatsAppEvent[] = ['created', 'rescheduled', 'cancelled'];
+const EVENTS: WhatsAppEvent[] = ['created', 'rescheduled', 'cancelled', 'followup', 'followup_manos', 'followup_pies'];
 
 /**
  * GET /api/whatsapp-templates — plantillas de los mensajes al cliente.

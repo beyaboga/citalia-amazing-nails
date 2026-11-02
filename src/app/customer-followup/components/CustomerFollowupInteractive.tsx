@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { useSession } from '@/lib/useSession';
-import { buildWhatsAppUrl } from '@/lib/whatsapp';
+import { buildWhatsAppUrl, renderTemplate, followupEventForCategory } from '@/lib/whatsapp';
 import { rangeForPreset, type DateRangePreset } from '@/lib/reportFilters';
 import { exportCsv, exportXlsx } from '@/lib/exportTable';
 import DateRangePresetFilter from '@/components/common/DateRangePresetFilter';
@@ -107,8 +107,30 @@ const CustomerFollowupInteractive = () => {
       .catch(() => {});
   }, []);
 
+  // Texto editable en Configuración → Mensajes de WhatsApp; este es el de respaldo.
+  const FALLBACK_BODY =
+    'Hola {{cliente}}, ¡esperamos que estés muy bien! Notamos que ya te toca tu próxima visita de {{categoria}}. ¿Te gustaría agendar tu cita?';
+  const [followupBodies, setFollowupBodies] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('/api/whatsapp-templates')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: { event: string; body: string }[]) => {
+        if (!Array.isArray(rows)) return;
+        setFollowupBodies(Object.fromEntries(rows.map((x) => [x.event, x.body])));
+      })
+      .catch(() => {});
+  }, []);
+
   const sendWhatsApp = (row: FollowupRow) => {
-    const message = `Hola ${row.customerName.split(' ')[0]}, ¡esperamos que estés muy bien! Notamos que ya te toca tu próxima visita de ${row.categoryName}. ¿Te gustaría agendar tu cita?`;
+    const body =
+      followupBodies[followupEventForCategory(row.categoryName)] ??
+      followupBodies.followup ??
+      FALLBACK_BODY;
+    const message = renderTemplate(body, {
+      cliente: row.customerName.split(' ')[0],
+      categoria: row.categoryName,
+    });
     const url = buildWhatsAppUrl(row.customerPhone, message);
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
     else alert('Esta clienta no tiene un teléfono válido registrado.');

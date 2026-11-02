@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { useSession } from '@/lib/useSession';
 import {
-  WHATSAPP_VARIABLES,
+  variablesForEvent,
   WHATSAPP_EVENT_LABELS,
   renderTemplate,
   sampleVariables,
@@ -16,6 +16,12 @@ const EVENT_HINTS: Record<WhatsAppEvent, string> = {
   created: 'Se genera al guardar una cita nueva.',
   rescheduled: 'Se genera cuando una cita cambia de fecha u hora.',
   cancelled: 'Se genera cuando una cita se marca como cancelada.',
+  followup_manos:
+    'Botón de WhatsApp en Seguimiento de Clientes, para las clientas que les toca volver por Manos.',
+  followup_pies:
+    'Botón de WhatsApp en Seguimiento de Clientes, para las clientas que les toca volver por Pies.',
+  followup:
+    'Botón de WhatsApp en Seguimiento de Clientes, para las demás categorías (por ejemplo Adicionales).',
 };
 
 const WhatsAppMessagesSection = () => {
@@ -47,7 +53,7 @@ const WhatsAppMessagesSection = () => {
 
   // La vista previa usa datos de ejemplo: enseña cómo le llegará el mensaje a la
   // clienta sin necesidad de crear una cita de prueba.
-  const preview = active ? renderTemplate(active.body, sampleVariables()) : '';
+  const preview = active ? renderTemplate(active.body, sampleVariables(active.event)) : '';
 
   const insertVariable = (key: string) => {
     if (!active) return;
@@ -200,7 +206,7 @@ const WhatsAppMessagesSection = () => {
                   Datos de la cita que puede insertar
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {WHATSAPP_VARIABLES.map((variable) => (
+                  {variablesForEvent(active.event).map((variable) => (
                     <button
                       key={variable.key}
                       type="button"
