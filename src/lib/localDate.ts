@@ -5,3 +5,17 @@
 export function toLocalDateString(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/** 'YYYY-MM-DD' → 'DD/MM/YYYY' (sin pasar por Date, para no mover el día por zona horaria). */
+export function formatDateDMY(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return y && m && d ? `${d}/${m}/${y}` : iso;
+}
+
+/** 'HH:MM' (24 h) → 'hh:MM AM/PM'. */
+export function formatTime12(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h)) return hhmm;
+  const period = h >= 12 ? 'PM' : 'AM';
+  return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+}

@@ -1,69 +1,72 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { formatDateDMY, formatTime12 } from '@/lib/localDate';
 import AppointmentHeader from './AppointmentHeader';
 import ClientInfoCard from './ClientInfoCard';
 import ServicesCard from './ServicesCard';
-import AppointmentTimeline from './AppointmentTimeline';
 import ActionButtons from './ActionButtons';
 import CancellationModal from './CancellationModal';
 import RescheduleModal from './RescheduleModal';
 
-interface Service {
-  id: string;
-  name: string;
-  category: string;
-  duration: number;
-  price: number;
-}
+type Status = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive' | 'in_progress' | 'no_show';
 
-interface ClientInfo {
-  name: string;
-  email: string;
-  phone: string;
-  image: string;
-  alt: string;
-  totalAppointments: number;
-  lastVisit: string;
-}
-
-interface TimelineEvent {
-  id: string;
-  action: string;
-  timestamp: string;
-  user: string;
-  details?: string;
-}
-
+/** Cita tal como la devuelve GET /api/appointments/[id]. */
 interface AppointmentData {
-  id: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive';
+  id: number;
+  customerName: string;
+  customerPhone: string | null;
+  technicianName: string | null;
   date: string;
-  time: string;
-  client: ClientInfo;
-  services: Service[];
-  totalAmount: number;
-  notes?: string;
-  timeline: TimelineEvent[];
+  startTime: string;
+  status: Status;
+  totalPrice: number;
+  notes: string | null;
+  serviceLines: { serviceId: number; name: string; price: number; duration: number | null }[];
 }
 
-interface AppointmentDetailsInteractiveProps {
-  appointmentData: AppointmentData;
-}
-
-const AppointmentDetailsInteractive = ({ appointmentData }: AppointmentDetailsInteractiveProps) => {
+const AppointmentDetailsInteractive = () => {
   const router = useRouter();
-  const [isHydrated, setIsHydrated] = useState(false);
+  const appointmentId = Number(useSearchParams().get('id'));
+  const wantsReschedule = useSearchParams().get('action') === 'reschedule';
+
+  const [appointment, setAppointment] = useState<AppointmentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
+  const load = useCallback(async () => {
+    if (!Number.isInteger(appointmentId) || appointmentId <= 0) {
+      setLoadError('No se indicó qué cita mostrar.');
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'No se pudo cargar la cita');
+      setAppointment(data);
+      setLoadError('');
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'No se pudo cargar la cita');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [appointmentId]);
+
   useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+    load();
+  }, [load]);
+
+  // Llegar desde "Reprogramar" del dashboard abre directamente el selector de fecha.
+  useEffect(() => {
+    if (appointment && wantsReschedule) setIsRescheduleModalOpen(true);
+  }, [appointment, wantsReschedule]);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setToastMessage(message);
@@ -72,76 +75,104 @@ const AppointmentDetailsInteractive = ({ appointmentData }: AppointmentDetailsIn
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const handleConfirm = () => {
-    showNotification('Cita confirmada exitosamente');
-    setTimeout(() => router.push('/appointments-management'), 1500);
+  /** Guarda cambios en la cita; muestra el error real del servidor si falla. */
+  const patch = async (body: Record<string, unknown>, successMessage: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.error || 'No se pudo guardar el cambio');
+      showNotification(successMessage);
+      await load();
+    } catch (e) {
+      showNotification(e instanceof Error ? e.message : 'No se pudo guardar el cambio', 'error');
+    }
   };
 
-  const handleComplete = () => {
-    showNotification('Cita marcada como completada');
-    setTimeout(() => router.push('/appointments-management'), 1500);
-  };
+  const handleConfirm = () => patch({ status: 'confirmed' }, 'Cita confirmada');
+
+  const handleComplete = () => patch({ status: 'completed' }, 'Cita marcada como completada');
 
   const handleCancel = (reason: string) => {
     setIsCancelModalOpen(false);
-    showNotification(`Cita cancelada: ${reason}`);
-    setTimeout(() => router.push('/appointments-management'), 1500);
+    const note = `Cancelada: ${reason}`;
+    patch(
+      { status: 'cancelled', notes: appointment?.notes ? `${appointment.notes}\n${note}` : note },
+      'Cita cancelada'
+    );
   };
 
   const handleReschedule = (date: string, time: string) => {
     setIsRescheduleModalOpen(false);
-    showNotification(`Cita reprogramada para ${date} a las ${time}`);
-    setTimeout(() => router.push('/appointments-management'), 1500);
+    patch({ date, startTime: time }, `Cita reprogramada para ${formatDateDMY(date)} a las ${formatTime12(time)}`);
   };
 
   const handleEdit = () => {
-    router.push('/new-appointment-creation');
+    router.push('/appointments-calendar');
   };
 
   const handlePrint = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
-    }
+    window.print();
   };
 
-  if (!isHydrated) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="h-32 bg-card rounded-lg border border-border animate-pulse" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="h-64 bg-card rounded-lg border border-border animate-pulse" />
-            <div className="h-96 bg-card rounded-lg border border-border animate-pulse" />
-          </div>
-          <div className="space-y-6">
-            <div className="h-48 bg-card rounded-lg border border-border animate-pulse" />
-            <div className="h-64 bg-card rounded-lg border border-border animate-pulse" />
-          </div>
+          <div className="lg:col-span-2 h-96 bg-card rounded-lg border border-border animate-pulse" />
+          <div className="h-48 bg-card rounded-lg border border-border animate-pulse" />
         </div>
       </div>
     );
   }
 
+  if (loadError || !appointment) {
+    return (
+      <div className="bg-card rounded-lg border border-border p-10 text-center">
+        <p className="text-foreground font-medium mb-4">{loadError || 'Cita no encontrada'}</p>
+        <button
+          type="button"
+          onClick={() => router.push('/appointments-management')}
+          className="h-10 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-smooth"
+        >
+          Volver a las citas
+        </button>
+      </div>
+    );
+  }
+
+  const services = appointment.serviceLines.map((line) => ({
+    id: String(line.serviceId),
+    name: line.name,
+    duration: line.duration ?? 0,
+    price: line.price,
+  }));
+
   return (
     <>
       <div className="space-y-6">
         <AppointmentHeader
-          appointmentId={appointmentData.id}
-          status={appointmentData.status}
-          date={appointmentData.date}
-          time={appointmentData.time}
+          appointmentId={String(appointment.id)}
+          status={appointment.status}
+          date={formatDateDMY(appointment.date)}
+          time={formatTime12(appointment.startTime)}
+          technicianName={appointment.technicianName}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <ServicesCard
-              services={appointmentData.services}
-              totalAmount={appointmentData.totalAmount}
-              notes={appointmentData.notes}
+              services={services}
+              totalAmount={appointment.totalPrice}
+              notes={appointment.notes ?? undefined}
             />
 
             <ActionButtons
-              status={appointmentData.status}
+              status={appointment.status}
               onConfirm={handleConfirm}
               onComplete={handleComplete}
               onCancel={() => setIsCancelModalOpen(true)}
@@ -152,8 +183,9 @@ const AppointmentDetailsInteractive = ({ appointmentData }: AppointmentDetailsIn
           </div>
 
           <div className="space-y-6">
-            <ClientInfoCard client={appointmentData.client} />
-            <AppointmentTimeline events={appointmentData.timeline} />
+            <ClientInfoCard
+              client={{ name: appointment.customerName, phone: appointment.customerPhone }}
+            />
           </div>
         </div>
       </div>
@@ -162,25 +194,27 @@ const AppointmentDetailsInteractive = ({ appointmentData }: AppointmentDetailsIn
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleCancel}
-        appointmentId={appointmentData.id}
+        appointmentId={String(appointment.id)}
       />
 
       <RescheduleModal
         isOpen={isRescheduleModalOpen}
         onClose={() => setIsRescheduleModalOpen(false)}
         onConfirm={handleReschedule}
-        appointmentId={appointmentData.id}
-        currentDate={appointmentData.date}
-        currentTime={appointmentData.time}
+        appointmentId={String(appointment.id)}
+        currentDate={formatDateDMY(appointment.date)}
+        currentTime={formatTime12(appointment.startTime)}
       />
 
       {showToast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5">
-          <div className={`
-            px-6 py-4 rounded-lg shadow-warm-lg border flex items-center gap-3
-            ${toastType === 'success' ?'bg-success text-success-foreground border-success' :'bg-error text-error-foreground border-error'
-            }
-          `}>
+          <div
+            className={`px-6 py-4 rounded-lg shadow-warm-lg border flex items-center gap-3 ${
+              toastType === 'success'
+                ? 'bg-success text-success-foreground border-success'
+                : 'bg-error text-error-foreground border-error'
+            }`}
+          >
             <span className="font-medium">{toastMessage}</span>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 
 interface ActionButtonsProps {
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive' | 'in_progress' | 'no_show';
   onConfirm: () => void;
   onComplete: () => void;
   onCancel: () => void;
@@ -44,7 +44,7 @@ const ActionButtons = ({
   }
 
   const canConfirm = status === 'pending';
-  const canComplete = status === 'confirmed';
+  const canComplete = status === 'confirmed' || status === 'in_progress';
   const canCancel = status === 'pending' || status === 'confirmed';
   const canReschedule = status === 'pending' || status === 'confirmed';
   const canEdit = status !== 'completed' && status !== 'cancelled';

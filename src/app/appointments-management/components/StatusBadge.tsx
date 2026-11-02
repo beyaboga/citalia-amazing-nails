@@ -1,7 +1,7 @@
 import Icon from '@/components/ui/AppIcon';
 
 interface StatusBadgeProps {
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive' | 'in_progress' | 'no_show';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -31,6 +31,16 @@ const StatusBadge = ({ status, size = 'md' }: StatusBadgeProps) => {
       label: 'Inactiva',
       icon: 'MinusCircleIcon',
       className: 'bg-muted text-muted-foreground border-border'
+    },
+    in_progress: {
+      label: 'En curso',
+      icon: 'ClockIcon',
+      className: 'bg-primary/10 text-primary border-primary/20'
+    },
+    no_show: {
+      label: 'No asistió',
+      icon: 'XCircleIcon',
+      className: 'bg-error/10 text-error border-error/20'
     }
   };
 

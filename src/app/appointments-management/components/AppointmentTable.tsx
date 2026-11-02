@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
-import AppImage from '@/components/ui/AppImage';
 import StatusBadge from './StatusBadge';
 
 interface Service {
@@ -17,12 +16,11 @@ interface Appointment {
   id: number;
   clientName: string;
   clientPhone: string;
-  clientImage: string;
-  clientImageAlt: string;
+  technicianName: string | null;
   date: string;
   time: string;
   services: Service[];
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive' | 'in_progress' | 'no_show';
   totalDuration: number;
   totalPrice: number;
   notes?: string;
@@ -177,6 +175,9 @@ const AppointmentTable = ({ appointments, selectedIds, onSelectAll, onSelectOne 
                 Servicios
               </th>
               <th className="px-6 py-4 text-left caption text-sm font-semibold text-foreground">
+                Estilista
+              </th>
+              <th className="px-6 py-4 text-left caption text-sm font-semibold text-foreground">
                 Fecha y hora
               </th>
               <th className="px-6 py-4 text-left caption text-sm font-semibold text-foreground">
@@ -211,11 +212,9 @@ const AppointmentTable = ({ appointments, selectedIds, onSelectAll, onSelectOne 
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
-                      <AppImage
-                        src={appointment.clientImage}
-                        alt={appointment.clientImageAlt}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-heading font-semibold">
+                        {appointment.clientName.trim().charAt(0).toUpperCase() || '?'}
+                      </div>
                     </div>
                     <div>
                       <p className="font-medium text-sm text-foreground">{appointment.clientName}</p>
@@ -236,6 +235,9 @@ const AppointmentTable = ({ appointments, selectedIds, onSelectAll, onSelectOne 
                       </p>
                     )}
                   </div>
+                </td>
+                <td className="px-6 py-4">
+                  <p className="text-sm text-foreground">{appointment.technicianName || 'Sin asignar'}</p>
                 </td>
                 <td className="px-6 py-4">
                   <div className="space-y-1">

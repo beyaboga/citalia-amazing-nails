@@ -2,12 +2,13 @@ import Icon from '@/components/ui/AppIcon';
 
 interface AppointmentHeaderProps {
   appointmentId: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'inactive' | 'in_progress' | 'no_show';
   date: string;
   time: string;
+  technicianName?: string | null;
 }
 
-const AppointmentHeader = ({ appointmentId, status, date, time }: AppointmentHeaderProps) => {
+const AppointmentHeader = ({ appointmentId, status, date, time, technicianName }: AppointmentHeaderProps) => {
   const getStatusConfig = (status: string) => {
     const configs = {
       pending: {
@@ -39,6 +40,18 @@ const AppointmentHeader = ({ appointmentId, status, date, time }: AppointmentHea
         text: 'text-muted-foreground',
         label: 'Inactiva',
         icon: 'MinusCircleIcon'
+      },
+      in_progress: {
+        bg: 'bg-primary/10',
+        text: 'text-primary',
+        label: 'En curso',
+        icon: 'ClockIcon'
+      },
+      no_show: {
+        bg: 'bg-error/10',
+        text: 'text-error',
+        label: 'No asistió',
+        icon: 'XCircleIcon'
       }
     };
     return configs[status as keyof typeof configs] || configs.pending;
@@ -67,6 +80,10 @@ const AppointmentHeader = ({ appointmentId, status, date, time }: AppointmentHea
             <div className="flex items-center gap-2">
               <Icon name="ClockIcon" size={16} />
               <span>{time}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Icon name="UserIcon" size={16} />
+              <span>Estilista: {technicianName || 'Sin asignar'}</span>
             </div>
           </div>
         </div>

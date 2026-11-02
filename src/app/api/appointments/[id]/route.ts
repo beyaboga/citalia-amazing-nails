@@ -70,6 +70,7 @@ export async function GET(_request: Request, context: RouteContext) {
                   'serviceId', s.id,
                   'name', s.name,
                   'price', aps.price_at_booking::float8,
+                  'duration', aps.duration_at_booking,
                   'originalPrice', aps.original_price::float8,
                   'catalogPrice', s.price::float8
                 ) ORDER BY s.name

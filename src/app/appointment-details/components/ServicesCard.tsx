@@ -3,7 +3,7 @@ import Icon from '@/components/ui/AppIcon';
 interface Service {
   id: string;
   name: string;
-  category: string;
+  category?: string;
   duration: number;
   price: number;
 }
@@ -37,7 +37,7 @@ const ServicesCard = ({ services, totalAmount, notes }: ServicesCardProps) => {
           <div key={service.id} className="flex items-start justify-between gap-4 p-3 rounded-lg bg-muted/30">
             <div className="flex items-start gap-3 flex-1">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Icon name={getCategoryIcon(service.category) as any} size={20} className="text-primary" />
+                <Icon name={getCategoryIcon(service.category ?? '') as any} size={20} className="text-primary" />
               </div>
               
               <div className="flex-1">
@@ -45,8 +45,12 @@ const ServicesCard = ({ services, totalAmount, notes }: ServicesCardProps) => {
                   {service.name}
                 </h3>
                 <div className="flex items-center gap-3 caption text-muted-foreground">
-                  <span>{service.category}</span>
-                  <span>•</span>
+                  {service.category && (
+                    <>
+                      <span>{service.category}</span>
+                      <span>•</span>
+                    </>
+                  )}
                   <span>{service.duration} min</span>
                 </div>
               </div>
