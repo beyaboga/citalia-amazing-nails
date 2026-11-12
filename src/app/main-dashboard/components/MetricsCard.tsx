@@ -33,12 +33,12 @@ const MetricsCard = ({ title, value, icon, trend, comparisonLabel = 'vs período
       {trend && (
         <div className="flex items-center gap-1">
           <Icon 
-            name={trend.isPositive ? 'ArrowTrendingUpIcon' : 'ArrowTrendingDownIcon'} 
+            name={trend.value >= 0 ? 'ArrowTrendingUpIcon' : 'ArrowTrendingDownIcon'} 
             size={16} 
             className={trend.isPositive ? 'text-success' : 'text-error'} 
           />
           <span className={`caption font-medium ${trend.isPositive ? 'text-success' : 'text-error'}`}>
-            {Math.abs(trend.value)}%
+            {trend.value > 0 ? '+' : trend.value < 0 ? '−' : ''}{Math.abs(trend.value)}%
           </span>
           <span className="caption text-muted-foreground ml-1">{comparisonLabel}</span>
         </div>

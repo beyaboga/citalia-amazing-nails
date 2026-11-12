@@ -240,8 +240,9 @@ export async function GET(request: Request) {
   const pct = (cur: number, prev: number) =>
     prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? 100 : 0;
   // Para gastos/cancelaciones, "positivo" es que hayan bajado, no subido.
-  const pctLowerIsBetter = (cur: number, prev: number) =>
-    prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? -100 : 0;
+  // El signo del porcentaje siempre es la dirección real (subió = +); lo bueno/malo
+  // lo marca `isPositive` aparte.
+  const pctLowerIsBetter = pct;
 
   const utilidad = Math.round((s.income - s.expense - s.salary - s.commissions) * 100) / 100;
   const prevUtilidad = Math.round((s.prev_income - s.prev_expense - s.prev_salary - s.prev_commissions) * 100) / 100;
