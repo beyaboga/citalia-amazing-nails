@@ -151,6 +151,9 @@ const DashboardInteractive = () => {
 
   const m = data.metrics;
   const comparisonLabel = 'vs período anterior';
+  // El % de la línea grande es del período seleccionado; el color (bueno/malo) sigue
+  // la comparación MoM al día: rojo si llevas peor que el mes pasado a esta fecha.
+  const withMomColor = (t: Trend, x: Mom): Trend => ({ ...t, isPositive: x.isPositive });
   const mkMom = (x: Mom, money = false) => ({
     current: money ? formatLempiras(x.current) : String(x.current),
     previous: money ? formatLempiras(x.previous) : String(x.previous),
@@ -159,12 +162,12 @@ const DashboardInteractive = () => {
     label: data.momLabel,
   });
   const metricsData = [
-    { title: 'Ventas del período', value: formatLempiras(m.income), icon: 'CurrencyDollarIcon', trend: m.incomeTrend, mom: mkMom(data.mom.income, true) },
-    { title: 'Citas realizadas', value: m.appointments, icon: 'CalendarDaysIcon', trend: m.appointmentsTrend, mom: mkMom(data.mom.appointments) },
-    { title: 'Cancelaciones', value: m.cancellations, icon: 'XCircleIcon', trend: m.cancellationsTrend, mom: mkMom(data.mom.cancellations) },
-    { title: 'Gastos del período', value: formatLempiras(m.expense), icon: 'ArrowTrendingDownIcon', trend: m.expenseTrend, mom: mkMom(data.mom.expense, true), subtitle: 'Gastos + planilla pagados' },
-    { title: 'Utilidad estimada', value: formatLempiras(m.utilidad), icon: 'BanknotesIcon', trend: m.utilidadTrend, mom: mkMom(data.mom.utilidad, true), subtitle: 'Ingresos − gastos' },
-    { title: 'Número de clientes', value: m.totalCustomers, icon: 'UserGroupIcon', trend: m.totalCustomersTrend, mom: mkMom(data.mom.customers) },
+    { title: 'Ventas del período', value: formatLempiras(m.income), icon: 'CurrencyDollarIcon', trend: withMomColor(m.incomeTrend, data.mom.income), mom: mkMom(data.mom.income, true) },
+    { title: 'Citas realizadas', value: m.appointments, icon: 'CalendarDaysIcon', trend: withMomColor(m.appointmentsTrend, data.mom.appointments), mom: mkMom(data.mom.appointments) },
+    { title: 'Cancelaciones', value: m.cancellations, icon: 'XCircleIcon', trend: withMomColor(m.cancellationsTrend, data.mom.cancellations), mom: mkMom(data.mom.cancellations) },
+    { title: 'Gastos del período', value: formatLempiras(m.expense), icon: 'ArrowTrendingDownIcon', trend: withMomColor(m.expenseTrend, data.mom.expense), mom: mkMom(data.mom.expense, true), subtitle: 'Gastos + planilla pagados' },
+    { title: 'Utilidad estimada', value: formatLempiras(m.utilidad), icon: 'BanknotesIcon', trend: withMomColor(m.utilidadTrend, data.mom.utilidad), mom: mkMom(data.mom.utilidad, true), subtitle: 'Ingresos − gastos' },
+    { title: 'Número de clientes', value: m.totalCustomers, icon: 'UserGroupIcon', trend: withMomColor(m.totalCustomersTrend, data.mom.customers), mom: mkMom(data.mom.customers) },
     { title: 'Nuevas vs Recurrentes', value: m.newCustomers, icon: 'SparklesIcon', subtitle: `${m.returningCustomers} recurrentes` },
     {
       title: 'Servicio Más Vendido', value: m.topService?.name ?? '—', icon: 'StarIcon',
