@@ -54,7 +54,38 @@ export async function GET(request: Request) {
   const prevTo = fmt(prevToDate);
   const prevFrom = fmt(prevFromDate);
 
-  const [scalars, topService, byDay, revenueByDay, byCategory, topTechs, upcoming, incomeVsExpense, followup, cashPending, customerStats] = await Promise.all([
+  const [mtd, scalars, topService, byDay, revenueByDay, byCategory, topTechs, upcoming, incomeVsExpense, followup, cashPending, customerStats] = await Promise.all([
+    // Comparación MoM "al día": mes en curso (1 → hoy) vs mes anterior (1 → mismo día,
+    // acotado al fin de ese mes). Independiente del filtro de período del dashboard.
+    pool.query(`
+      WITH w AS (
+        SELECT d.today,
+               date_trunc('month', d.today)::date AS cur_from,
+               (date_trunc('month', d.today) - interval '1 month')::date AS prev_from,
+               LEAST((date_trunc('month', d.today) - interval '1 month')::date + (EXTRACT(DAY FROM d.today)::int - 1),
+                     (date_trunc('month', d.today) - interval '1 day')::date) AS prev_to
+          FROM (SELECT (now() AT TIME ZONE 'America/Tegucigalpa')::date AS today) d
+      )
+      SELECT to_char(w.today, 'YYYY-MM-DD') AS today, to_char(w.cur_from, 'YYYY-MM-DD') AS cur_from,
+             to_char(w.prev_from, 'YYYY-MM-DD') AS prev_from, to_char(w.prev_to, 'YYYY-MM-DD') AS prev_to,
+        (SELECT COALESCE(SUM(subtotal - discount_amount), 0) FROM payments WHERE voided_at IS NULL
+           AND (created_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.cur_from AND w.today)::float8 AS income,
+        (SELECT COALESCE(SUM(subtotal - discount_amount), 0) FROM payments WHERE voided_at IS NULL
+           AND (created_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.prev_from AND w.prev_to)::float8 AS prev_income,
+        (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN w.cur_from AND w.today AND status <> 'cancelled')::int AS appts,
+        (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN w.prev_from AND w.prev_to AND status <> 'cancelled')::int AS prev_appts,
+        (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN w.cur_from AND w.today AND status = 'cancelled')::int AS cancellations,
+        (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN w.prev_from AND w.prev_to AND status = 'cancelled')::int AS prev_cancellations,
+        ((SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'PAID' AND expense_date BETWEEN w.cur_from AND w.today)
+         + (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.cur_from AND w.today)
+         + (SELECT COALESCE(SUM(total_amount), 0) FROM commission_payouts WHERE status = 'paid' AND (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.cur_from AND w.today))::float8 AS expense,
+        ((SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'PAID' AND expense_date BETWEEN w.prev_from AND w.prev_to)
+         + (SELECT COALESCE(SUM(salary_amount), 0) FROM payroll_payments WHERE (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.prev_from AND w.prev_to)
+         + (SELECT COALESCE(SUM(total_amount), 0) FROM commission_payouts WHERE status = 'paid' AND (paid_at AT TIME ZONE 'America/Tegucigalpa')::date BETWEEN w.prev_from AND w.prev_to))::float8 AS prev_expense,
+        (SELECT COUNT(DISTINCT customer_id) FROM customer_category_visits WHERE visit_date BETWEEN w.cur_from AND w.today)::int AS customers,
+        (SELECT COUNT(DISTINCT customer_id) FROM customer_category_visits WHERE visit_date BETWEEN w.prev_from AND w.prev_to)::int AS prev_customers
+      FROM w
+    `),
     pool.query(
       `SELECT
         (SELECT COUNT(*) FROM appointments WHERE appointment_date BETWEEN $1 AND $2 AND status <> 'cancelled')::int AS appts,
@@ -204,6 +235,7 @@ export async function GET(request: Request) {
   ]);
 
   const s = scalars.rows[0];
+  const mt = mtd.rows[0];
   const cs = customerStats.rows[0];
   const pct = (cur: number, prev: number) =>
     prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? 100 : 0;
@@ -214,8 +246,29 @@ export async function GET(request: Request) {
   const utilidad = Math.round((s.income - s.expense - s.salary - s.commissions) * 100) / 100;
   const prevUtilidad = Math.round((s.prev_income - s.prev_expense - s.prev_salary - s.prev_commissions) * 100) / 100;
 
+  const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const day = (iso: string) => Number(iso.slice(8, 10));
+  const mon = (iso: string) => monthNames[Number(iso.slice(5, 7)) - 1];
+  const mom = (cur: number, prev: number, lowerIsBetter = false) => ({
+    current: cur,
+    previous: prev,
+    pct: lowerIsBetter ? pctLowerIsBetter(cur, prev) : pct(cur, prev),
+    isPositive: lowerIsBetter ? cur <= prev : cur >= prev,
+  });
+  const mtdUtilidad = Math.round((mt.income - mt.expense) * 100) / 100;
+  const mtdPrevUtilidad = Math.round((mt.prev_income - mt.prev_expense) * 100) / 100;
+
   return NextResponse.json({
     period: { from, to },
+    momLabel: `${day(mt.cur_from)}–${day(mt.today)} ${mon(mt.today)} vs ${day(mt.prev_from)}–${day(mt.prev_to)} ${mon(mt.prev_from)}`,
+    mom: {
+      income: mom(mt.income, mt.prev_income),
+      appointments: mom(mt.appts, mt.prev_appts),
+      cancellations: mom(mt.cancellations, mt.prev_cancellations, true),
+      expense: mom(mt.expense, mt.prev_expense, true),
+      utilidad: mom(mtdUtilidad, mtdPrevUtilidad),
+      customers: mom(mt.customers, mt.prev_customers),
+    },
     metrics: {
       appointments: s.appts,
       appointmentsTrend: { value: pct(s.appts, s.prev_appts), isPositive: s.appts >= s.prev_appts },

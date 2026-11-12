@@ -11,9 +11,11 @@ interface MetricsCardProps {
   /** Contra qué se compara el trend (ej. "vs período anterior"). */
   comparisonLabel?: string;
   subtitle?: string;
+  /** Comparación mes en curso vs mes anterior al mismo día (letra pequeña). */
+  mom?: { current: string; previous: string; pct: number; isPositive: boolean; label: string };
 }
 
-const MetricsCard = ({ title, value, icon, trend, comparisonLabel = 'vs período anterior', subtitle }: MetricsCardProps) => {
+const MetricsCard = ({ title, value, icon, trend, comparisonLabel = 'vs período anterior', subtitle, mom }: MetricsCardProps) => {
   return (
     <div className="bg-card rounded-lg p-6 shadow-warm hover:shadow-warm-md transition-smooth border border-border">
       <div className="flex items-start justify-between mb-4">
@@ -40,6 +42,14 @@ const MetricsCard = ({ title, value, icon, trend, comparisonLabel = 'vs período
           </span>
           <span className="caption text-muted-foreground ml-1">{comparisonLabel}</span>
         </div>
+      )}
+      {mom && (
+        <p className="text-[11px] leading-tight text-muted-foreground mt-2">
+          <span className={`font-medium ${mom.isPositive ? 'text-success' : 'text-error'}`}>
+            {mom.pct > 0 ? '+' : ''}{mom.pct}%
+          </span>{' '}
+          MoM ({mom.label}): {mom.current} vs {mom.previous}
+        </p>
       )}
     </div>
   );

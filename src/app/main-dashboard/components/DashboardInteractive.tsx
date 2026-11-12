@@ -18,8 +18,12 @@ import DateRangePresetFilter from '@/components/common/DateRangePresetFilter';
 
 interface Trend { value: number; isPositive: boolean }
 
+interface Mom { current: number; previous: number; pct: number; isPositive: boolean }
+
 interface DashboardData {
   period: { from: string; to: string };
+  momLabel: string;
+  mom: { income: Mom; appointments: Mom; cancellations: Mom; expense: Mom; utilidad: Mom; customers: Mom };
   metrics: {
     appointments: number;
     appointmentsTrend: Trend;
@@ -147,13 +151,20 @@ const DashboardInteractive = () => {
 
   const m = data.metrics;
   const comparisonLabel = 'vs período anterior';
+  const mkMom = (x: Mom, money = false) => ({
+    current: money ? formatLempiras(x.current) : String(x.current),
+    previous: money ? formatLempiras(x.previous) : String(x.previous),
+    pct: x.pct,
+    isPositive: x.isPositive,
+    label: data.momLabel,
+  });
   const metricsData = [
-    { title: 'Ventas del período', value: formatLempiras(m.income), icon: 'CurrencyDollarIcon', trend: m.incomeTrend },
-    { title: 'Citas realizadas', value: m.appointments, icon: 'CalendarDaysIcon', trend: m.appointmentsTrend },
-    { title: 'Cancelaciones', value: m.cancellations, icon: 'XCircleIcon', trend: m.cancellationsTrend },
-    { title: 'Gastos del período', value: formatLempiras(m.expense), icon: 'ArrowTrendingDownIcon', trend: m.expenseTrend, subtitle: 'Gastos + planilla pagados' },
-    { title: 'Utilidad estimada', value: formatLempiras(m.utilidad), icon: 'BanknotesIcon', trend: m.utilidadTrend, subtitle: 'Ingresos − gastos' },
-    { title: 'Número de clientes', value: m.totalCustomers, icon: 'UserGroupIcon', trend: m.totalCustomersTrend },
+    { title: 'Ventas del período', value: formatLempiras(m.income), icon: 'CurrencyDollarIcon', trend: m.incomeTrend, mom: mkMom(data.mom.income, true) },
+    { title: 'Citas realizadas', value: m.appointments, icon: 'CalendarDaysIcon', trend: m.appointmentsTrend, mom: mkMom(data.mom.appointments) },
+    { title: 'Cancelaciones', value: m.cancellations, icon: 'XCircleIcon', trend: m.cancellationsTrend, mom: mkMom(data.mom.cancellations) },
+    { title: 'Gastos del período', value: formatLempiras(m.expense), icon: 'ArrowTrendingDownIcon', trend: m.expenseTrend, mom: mkMom(data.mom.expense, true), subtitle: 'Gastos + planilla pagados' },
+    { title: 'Utilidad estimada', value: formatLempiras(m.utilidad), icon: 'BanknotesIcon', trend: m.utilidadTrend, mom: mkMom(data.mom.utilidad, true), subtitle: 'Ingresos − gastos' },
+    { title: 'Número de clientes', value: m.totalCustomers, icon: 'UserGroupIcon', trend: m.totalCustomersTrend, mom: mkMom(data.mom.customers) },
     { title: 'Nuevas vs Recurrentes', value: m.newCustomers, icon: 'SparklesIcon', subtitle: `${m.returningCustomers} recurrentes` },
     {
       title: 'Servicio Más Vendido', value: m.topService?.name ?? '—', icon: 'StarIcon',
@@ -206,6 +217,7 @@ const DashboardInteractive = () => {
             trend={metric.trend}
             comparisonLabel={comparisonLabel}
             subtitle={metric.subtitle}
+            mom={'mom' in metric ? metric.mom : undefined}
           />
         ))}
       </div>
