@@ -45,6 +45,7 @@ const CommissionPaymentsInteractive = () => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   // Fecha en la que realmente se pagó: por defecto hoy, pero editable para
@@ -155,6 +156,27 @@ const CommissionPaymentsInteractive = () => {
     }
   };
 
+  const handleRecalculate = async () => {
+    if (!window.confirm('Se recalcularán las comisiones pendientes: las que no correspondan al técnico actual de la cita se quitarán y se asignarán al técnico correcto. Las ya pagadas no se tocan. ¿Continuar?')) return;
+    setError('');
+    setMessage('');
+    setIsRecalculating(true);
+    try {
+      const res = await fetch('/api/commission-payments/recalculate', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'No se pudo recalcular');
+      const msg = data.removed > 0
+        ? `Se corrigieron ${data.removed} comisiones mal asignadas.`
+        : 'No se encontraron comisiones mal asignadas.';
+      await load();
+      setMessage(msg);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al recalcular');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   if (!sessionLoading && !canPay) {
     return (
       <div className="bg-card rounded-lg border border-border p-12 text-center">
@@ -235,8 +257,12 @@ const CommissionPaymentsInteractive = () => {
 
       {/* Listado */}
       <div className="bg-card rounded-lg border border-border shadow-warm overflow-hidden">
-        {entries.length > 0 && (
-          <div className="p-4 border-b border-border flex justify-end gap-2">
+        <div className="p-4 border-b border-border flex justify-end gap-2">
+          <button type="button" onClick={handleRecalculate} disabled={isRecalculating}
+            className="h-9 px-4 bg-background border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted flex items-center gap-2 disabled:opacity-50">
+            <Icon name="ArrowPathIcon" size={16} className={isRecalculating ? 'animate-spin' : ''} /> Recalcular comisiones
+          </button>
+          {entries.length > 0 && (<>
             <button type="button" onClick={() => { const d = buildExportData(); exportCsv('comisiones.csv', d.headers, d.rows); }}
               className="h-9 px-4 bg-background border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted flex items-center gap-2">
               <Icon name="ArrowDownTrayIcon" size={16} /> CSV
@@ -245,8 +271,8 @@ const CommissionPaymentsInteractive = () => {
               className="h-9 px-4 bg-background border border-border text-foreground rounded-lg text-sm font-medium hover:bg-muted flex items-center gap-2">
               <Icon name="ArrowDownTrayIcon" size={16} /> Excel
             </button>
-          </div>
-        )}
+          </>)}
+        </div>
         {isLoading ? (
           <div className="p-12 flex items-center justify-center text-muted-foreground">
             <Icon name="ArrowPathIcon" size={24} className="animate-spin" />
