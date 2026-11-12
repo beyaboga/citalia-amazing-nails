@@ -48,7 +48,7 @@ const MetricsCard = ({ title, value, icon, trend, comparisonLabel = 'vs período
           <span className={`font-medium ${mom.isPositive ? 'text-success' : 'text-error'}`}>
             {mom.pct > 0 ? '+' : ''}{mom.pct}%
           </span>{' '}
-          MoM ({mom.label}): {mom.current} vs {mom.previous}
+          vs {mom.label}: {mom.current} vs {mom.previous}
         </p>
       )}
     </div>
